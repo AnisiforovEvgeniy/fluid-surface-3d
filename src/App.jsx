@@ -1,4 +1,6 @@
 import { useEffect, useRef } from 'react';
+import { Mesh } from './Mesh';
+import { Grid } from './Grid';
 import './index.css';
 
 function App() {
@@ -15,9 +17,10 @@ function App() {
 
     let device;
     let context;
-    let vertexBuffer;
     let presentationFormat;
     let multisampleTexture;
+    let mesh;
+    let grid;
     const sampleCount = 4;
 
     const createMultisampleTexture = () => {
@@ -66,57 +69,14 @@ function App() {
 
         createMultisampleTexture();
 
-        const vertexShaderCode = await fetch('./shaders/mesh/mesh_vertex.wgsl').then(r => r.text());
-        const fragmentShaderCode = await fetch('./shaders/mesh/mesh_fragment.wgsl').then(r => r.text());
+        const gridSize = 4;
+        const cellSize = 0.2;
+        
+        mesh = new Mesh(device, presentationFormat, sampleCount, gridSize, cellSize);
+        await mesh.init();
 
-        const shaderModule = device.createShaderModule({
-          code: vertexShaderCode + fragmentShaderCode,
-        });
-
-        const pipeline = device.createRenderPipeline({
-          layout: 'auto',
-          vertex: {
-            module: shaderModule,
-            entryPoint: 'mesh_vertex',
-            buffers: [{
-              arrayStride: 12, 
-              attributes: [
-                {
-                  shaderLocation: 0,
-                  offset: 0,
-                  format: 'float32x3', 
-                },
-              ],
-            }],
-          },
-          fragment: {
-            module: shaderModule,
-            entryPoint: 'mesh_fragment',
-            targets: [{
-              format: presentationFormat,
-            }],
-          },
-          primitive: {
-            topology: 'triangle-list',
-          },
-          multisample: {
-            count: sampleCount,
-          },
-        });
-
-        const vertices = new Float32Array([
-          0.0,  0.5,  0.0,
-          -0.5, -0.5,  0.0,
-          0.5, -0.5,  0.0,
-        ]);
-
-        vertexBuffer = device.createBuffer({
-          size: vertices.byteLength,
-          usage: GPUBufferUsage.VERTEX,
-          mappedAtCreation: true,
-        });
-        new Float32Array(vertexBuffer.getMappedRange()).set(vertices);
-        vertexBuffer.unmap();
+        grid = new Grid(device, presentationFormat, sampleCount, gridSize, cellSize);
+        await grid.init();
 
         const commandEncoder = device.createCommandEncoder();
         const textureView = context.getCurrentTexture().createView();
@@ -134,9 +94,10 @@ function App() {
         };
 
         const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        passEncoder.setPipeline(pipeline);
-        passEncoder.setVertexBuffer(0, vertexBuffer);
-        passEncoder.draw(3);
+        
+        mesh.render(passEncoder);
+        grid.render(passEncoder);
+        
         passEncoder.end();
 
         device.queue.submit([commandEncoder.finish()]);
@@ -152,8 +113,9 @@ function App() {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      if (vertexBuffer) vertexBuffer.destroy();
-      if (multisampleTexture) multisampleTexture.destroy();
+      mesh?.destroy();
+      grid?.destroy();
+      multisampleTexture?.destroy();
     };
   }, []);
 
