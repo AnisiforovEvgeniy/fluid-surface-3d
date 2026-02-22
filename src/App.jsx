@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mesh } from './Mesh';
 import { Grid } from './Grid';
-import ControlPanel from './Components/ControlPanel/ControlPanel';
+import ControlPanel from './components/ControlPanel/ControlPanel';
 import './index.css';
 
 function App() {
