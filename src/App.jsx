@@ -1,10 +1,102 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mesh } from './Mesh';
 import { Grid } from './Grid';
+import ControlPanel from './components/ControlPanel/ControlPanel';
 import './index.css';
 
 function App() {
   const canvasRef = useRef(null);
+  
+  // Параметры сетки
+  const [countCell, setCountCell] = useState(7);
+  const [sizeCell, setSizeCell] = useState(0.2);
+  
+  const meshRef = useRef(null);
+  const gridRef = useRef(null);
+  const deviceRef = useRef(null);
+  const contextRef = useRef(null);
+  const presentationFormatRef = useRef(null);
+  const multisampleTextureRef = useRef(null);
+  const sampleCount = 4;
+
+  const createMultisampleTexture = useCallback((device, presentationFormat, canvas) => {
+    multisampleTextureRef.current?.destroy();
+    multisampleTextureRef.current = device.createTexture({
+      size: [canvas.width, canvas.height],
+      sampleCount: sampleCount,
+      format: presentationFormat,
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+  }, []);
+
+  const resizeCanvas = useCallback(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || !deviceRef.current) return;
+    
+    const dpr = window.devicePixelRatio || 1;
+    const displayWidth = Math.floor(canvas.clientWidth * dpr);
+    const displayHeight = Math.floor(canvas.clientHeight * dpr);
+
+    if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+      canvas.width = displayWidth;
+      canvas.height = displayHeight;
+      createMultisampleTexture(deviceRef.current, presentationFormatRef.current, canvas);
+    }
+  }, [createMultisampleTexture]);
+
+  const rebuildScene = useCallback(async () => {
+    const canvas = canvasRef.current;
+    const device = deviceRef.current;
+    
+    if (!canvas || !device) return;
+
+    meshRef.current?.destroy();
+    gridRef.current?.destroy();
+
+    meshRef.current = new Mesh(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
+    await meshRef.current.init();
+
+    gridRef.current = new Grid(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
+    await gridRef.current.init();
+
+    renderScene();
+  }, [countCell, sizeCell]);
+
+  const renderScene = useCallback(() => {
+    const canvas = canvasRef.current;
+    const device = deviceRef.current;
+    const context = contextRef.current;
+    
+    if (!canvas || !device || !context) return;
+
+    const commandEncoder = device.createCommandEncoder();
+    const textureView = context.getCurrentTexture().createView();
+    const multisampleView = multisampleTextureRef.current.createView();
+
+    const renderPassDescriptor = {
+      colorAttachments: [{
+        view: multisampleView,
+        resolveTarget: textureView,
+        clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
+        loadOp: 'clear',
+        storeOp: 'discard',
+      }],
+      sampleCount: sampleCount,
+    };
+
+    const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+    
+    meshRef.current?.render(passEncoder);
+    gridRef.current?.render(passEncoder);
+    
+    passEncoder.end();
+
+    device.queue.submit([commandEncoder.finish()]);
+  }, []);
+
+  const handleApply = useCallback(() => {
+    rebuildScene();
+  }, [rebuildScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -15,47 +107,18 @@ function App() {
       return;
     }
 
-    let device;
-    let context;
-    let presentationFormat;
-    let multisampleTexture;
-    let mesh;
-    let grid;
-    const sampleCount = 4;
-
-    const createMultisampleTexture = () => {
-      if (!device || !presentationFormat) return;
-      
-      multisampleTexture?.destroy();
-      multisampleTexture = device.createTexture({
-        size: [canvas.width, canvas.height],
-        sampleCount: sampleCount,
-        format: presentationFormat,
-        usage: GPUTextureUsage.RENDER_ATTACHMENT,
-      });
-    };
-
-    const resizeCanvas = () => {
-      const dpr = window.devicePixelRatio || 1;
-      const displayWidth = Math.floor(canvas.clientWidth * dpr);
-      const displayHeight = Math.floor(canvas.clientHeight * dpr);
-
-      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-        canvas.width = displayWidth;
-        canvas.height = displayHeight;
-        createMultisampleTexture();
-      }
-    };
-
     const initWebGPU = async () => {
       try {
         const adapter = await navigator.gpu.requestAdapter();
         if (!adapter) throw new Error("Не удалось получить адаптер GPU");
         
-        device = await adapter.requestDevice();
+        const device = await adapter.requestDevice();
+        deviceRef.current = device;
         
-        context = canvas.getContext('webgpu');
-        presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        const context = canvas.getContext('webgpu');
+        const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+        presentationFormatRef.current = presentationFormat;
+        contextRef.current = context;
 
         const dpr = window.devicePixelRatio || 1;
         canvas.width = Math.floor(canvas.clientWidth * dpr);
@@ -67,40 +130,16 @@ function App() {
           alphaMode: 'opaque',
         });
 
-        createMultisampleTexture();
+        createMultisampleTexture(device, presentationFormat, canvas);
 
-        const gridSize = 4;
-        const cellSize = 0.2;
-        
-        mesh = new Mesh(device, presentationFormat, sampleCount, gridSize, cellSize);
-        await mesh.init();
+        // Инициализация сцены
+        meshRef.current = new Mesh(device, presentationFormat, sampleCount, countCell, sizeCell);
+        await meshRef.current.init();
 
-        grid = new Grid(device, presentationFormat, sampleCount, gridSize, cellSize);
-        await grid.init();
+        gridRef.current = new Grid(device, presentationFormat, sampleCount, countCell, sizeCell);
+        await gridRef.current.init();
 
-        const commandEncoder = device.createCommandEncoder();
-        const textureView = context.getCurrentTexture().createView();
-        const multisampleView = multisampleTexture.createView();
-
-        const renderPassDescriptor = {
-          colorAttachments: [{
-            view: multisampleView,
-            resolveTarget: textureView,
-            clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
-            loadOp: 'clear',
-            storeOp: 'discard',
-          }],
-          sampleCount: sampleCount,
-        };
-
-        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-        
-        mesh.render(passEncoder);
-        grid.render(passEncoder);
-        
-        passEncoder.end();
-
-        device.queue.submit([commandEncoder.finish()]);
+        renderScene();
 
       } catch (error) {
         console.error("Ошибка инициализации WebGPU:", error);
@@ -113,15 +152,22 @@ function App() {
 
     return () => {
       window.removeEventListener('resize', resizeCanvas);
-      mesh?.destroy();
-      grid?.destroy();
-      multisampleTexture?.destroy();
+      meshRef.current?.destroy();
+      gridRef.current?.destroy();
+      multisampleTextureRef.current?.destroy();
     };
   }, []);
 
   return (
     <div className="canvas-container">
       <canvas id="canvas" ref={canvasRef}></canvas>
+      <ControlPanel 
+        countCell={countCell}
+        setCountCell={setCountCell}
+        sizeCell={sizeCell}
+        setSizeCell={setSizeCell}
+        onApply={handleApply}
+      />
     </div>
   );
 }
