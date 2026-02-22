@@ -1,15 +1,24 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { Mesh } from './Mesh';
 import { Grid } from './Grid';
-import ControlPanel from './components/ControlPanel/ControlPanel';
+import ControlPanel from './Components/ControlPanel/ControlPanel';
 import './index.css';
 
 function App() {
   const canvasRef = useRef(null);
   
-  const [countCell, setCountCell] = useState(7);
-  const [sizeCell, setSizeCell] = useState(0.2);
-  const [showGrid, setShowGrid] = useState(false);
+  const getStoredValue = (key, defaultValue) => {
+    try {
+      const item = localStorage.getItem(key);
+      return item ? JSON.parse(item) : defaultValue;
+    } catch {
+      return defaultValue;
+    }
+  };
+  
+  const [countCell, setCountCell] = useState(() => getStoredValue('countCell', 7));
+  const [sizeCell, setSizeCell] = useState(() => getStoredValue('sizeCell', 0.2));
+  const [showGrid, setShowGrid] = useState(() => getStoredValue('showGrid', true));
   
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -118,6 +127,26 @@ function App() {
       renderScene();
     }
   }, [showGrid, renderScene]);
+
+  useEffect(() => {
+    const handleStorageChange = (e) => {
+      if (e.key === 'countCell' || e.key === 'sizeCell') {
+        try {
+          const value = JSON.parse(e.newValue);
+          if (e.key === 'countCell') setCountCell(value);
+          if (e.key === 'sizeCell') setSizeCell(value);
+        } catch {}
+      }
+      if (e.key === 'showGrid') {
+        try {
+          setShowGrid(JSON.parse(e.newValue));
+        } catch {}
+      }
+    };
+    
+    window.addEventListener('storage', handleStorageChange);
+    return () => window.removeEventListener('storage', handleStorageChange);
+  }, []);
 
   useEffect(() => {
     const canvas = canvasRef.current;
