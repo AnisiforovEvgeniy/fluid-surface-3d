@@ -7,7 +7,6 @@ import './index.css';
 function App() {
   const canvasRef = useRef(null);
   
-  // Параметры сетки
   const [countCell, setCountCell] = useState(7);
   const [sizeCell, setSizeCell] = useState(0.2);
   
@@ -18,6 +17,8 @@ function App() {
   const presentationFormatRef = useRef(null);
   const multisampleTextureRef = useRef(null);
   const sampleCount = 4;
+  
+  const isRebuildingRef = useRef(false);
 
   const createMultisampleTexture = useCallback((device, presentationFormat, canvas) => {
     multisampleTextureRef.current?.destroy();
@@ -45,21 +46,29 @@ function App() {
   }, [createMultisampleTexture]);
 
   const rebuildScene = useCallback(async () => {
-    const canvas = canvasRef.current;
-    const device = deviceRef.current;
+    if (isRebuildingRef.current) return;
     
-    if (!canvas || !device) return;
+    const device = deviceRef.current;
+    if (!device) return;
 
-    meshRef.current?.destroy();
-    gridRef.current?.destroy();
+    isRebuildingRef.current = true;
 
-    meshRef.current = new Mesh(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
-    await meshRef.current.init();
+    try {
+      meshRef.current?.destroy();
+      gridRef.current?.destroy();
 
-    gridRef.current = new Grid(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
-    await gridRef.current.init();
+      meshRef.current = new Mesh(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
+      await meshRef.current.init();
 
-    renderScene();
+      gridRef.current = new Grid(device, presentationFormatRef.current, sampleCount, countCell, sizeCell);
+      await gridRef.current.init();
+
+      renderScene();
+    } catch (error) {
+      console.error("Ошибка при пересоздании сцены:", error);
+    } finally {
+      isRebuildingRef.current = false;
+    }
   }, [countCell, sizeCell]);
 
   const renderScene = useCallback(() => {
@@ -94,9 +103,11 @@ function App() {
     device.queue.submit([commandEncoder.finish()]);
   }, []);
 
-  const handleApply = useCallback(() => {
-    rebuildScene();
-  }, [rebuildScene]);
+  useEffect(() => {
+    if (deviceRef.current) {
+      rebuildScene();
+    }
+  }, [countCell, sizeCell, rebuildScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -132,7 +143,6 @@ function App() {
 
         createMultisampleTexture(device, presentationFormat, canvas);
 
-        // Инициализация сцены
         meshRef.current = new Mesh(device, presentationFormat, sampleCount, countCell, sizeCell);
         await meshRef.current.init();
 
@@ -166,7 +176,6 @@ function App() {
         setCountCell={setCountCell}
         sizeCell={sizeCell}
         setSizeCell={setSizeCell}
-        onApply={handleApply}
       />
     </div>
   );
