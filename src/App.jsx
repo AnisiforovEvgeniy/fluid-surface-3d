@@ -9,6 +9,7 @@ function App() {
   
   const [countCell, setCountCell] = useState(7);
   const [sizeCell, setSizeCell] = useState(0.2);
+  const [showGrid, setShowGrid] = useState(false);
   
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -96,18 +97,27 @@ function App() {
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
     
     meshRef.current?.render(passEncoder);
-    gridRef.current?.render(passEncoder);
+    
+    if (showGrid && gridRef.current) {
+      gridRef.current.render(passEncoder);
+    }
     
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
-  }, []);
+  }, [showGrid]);
 
   useEffect(() => {
     if (deviceRef.current) {
       rebuildScene();
     }
   }, [countCell, sizeCell, rebuildScene]);
+
+  useEffect(() => {
+    if (deviceRef.current) {
+      renderScene();
+    }
+  }, [showGrid, renderScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -176,6 +186,8 @@ function App() {
         setCountCell={setCountCell}
         sizeCell={sizeCell}
         setSizeCell={setSizeCell}
+        showGrid={showGrid}
+        setShowGrid={setShowGrid}
       />
     </div>
   );

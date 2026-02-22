@@ -1,7 +1,7 @@
-import {Slider } from 'antd';
+import {Checkbox, Slider } from 'antd';
 import './ControlPanel.css';
 
-function ControlPanel({ countCell, setCountCell, sizeCell, setSizeCell}) {
+function ControlPanel({ countCell, setCountCell, sizeCell, setSizeCell, showGrid, setShowGrid}) {
 
   const handleCountChange = (value) => {
     if (Number.isNaN(value)) return;
@@ -38,6 +38,13 @@ function ControlPanel({ countCell, setCountCell, sizeCell, setSizeCell}) {
           onChange={handleSizeChange}
           value={typeof sizeCell === 'number' ? sizeCell : 0.2}
         />
+      </div>
+
+      <div className="control-group">
+        <div style={{display: "flex", gap: "7px"}}>
+          <Checkbox style={{display: "flex"}} checked={showGrid} onChange={(e) => setShowGrid(e.target.checked)}/>
+          Отображать сетку
+        </div>
       </div>
     </div>
   );
