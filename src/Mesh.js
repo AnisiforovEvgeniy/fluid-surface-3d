@@ -1,8 +1,7 @@
 export class Mesh {
-  constructor(device, presentationFormat, sampleCount, gridSize, cellSize) {
+  constructor(device, presentationFormat, gridSize, cellSize) {
     this.device = device;
     this.presentationFormat = presentationFormat;
-    this.sampleCount = sampleCount;
     this.gridSize = gridSize;    
     this.cellSize = cellSize;   
     this.pipeline = null;
@@ -56,7 +55,7 @@ export class Mesh {
         topology: 'triangle-list',
       },
       multisample: {
-        count: this.sampleCount,
+        count: 4
       },
     });
   }

@@ -1,8 +1,7 @@
 export class Grid {
-  constructor(device, presentationFormat, sampleCount, gridSize = 50, cellSize = 1.0) {
+  constructor(device, presentationFormat, gridSize, cellSize) {
     this.device = device;
     this.presentationFormat = presentationFormat;
-    this.sampleCount = sampleCount;
     this.gridSize = gridSize;
     this.cellSize = cellSize;
     this.pipeline = null;
@@ -56,7 +55,7 @@ export class Grid {
         topology: 'line-list',
       },
       multisample: {
-        count: this.sampleCount,
+        count: 4,
       },
     });
   }
