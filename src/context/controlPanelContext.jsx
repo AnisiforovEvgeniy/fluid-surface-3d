@@ -11,6 +11,11 @@ export function ControlPanelProvider({ children }) {
   const setCountCell = (value) => setCountCellLocalStorage(value);
   const setSizeCell = (value) => setSizeCellLocalStorage(value);
   const setShowGrid = (value) => setShowGridLocalStorage(value);
+  const resetValue = () => {
+    setCountCellLocalStorage(7)
+    setSizeCellLocalStorage(0.2)
+    setShowGridLocalStorage(true)
+  }
 
   const value = {
     countCell: countCellLocalStorage,
@@ -18,7 +23,8 @@ export function ControlPanelProvider({ children }) {
     sizeCell: sizeCellLocalStorage,
     setSizeCell,
     showGrid: showGridLocalStorage,
-    setShowGrid
+    setShowGrid,
+    resetValue
   }
 
   return (

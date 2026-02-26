@@ -1,9 +1,9 @@
-import { Checkbox, Slider } from "antd";
+import { Button, Checkbox, Slider } from "antd";
 import { useControlPanel } from "../../context/controlPanelContext";
 import "./ControlPanel.css";
 
 function ControlPanel() {
-  const {countCell, setCountCell, sizeCell, setSizeCell, showGrid, setShowGrid} = useControlPanel();
+  const {countCell, setCountCell, sizeCell, setSizeCell, showGrid, setShowGrid, resetValue} = useControlPanel();
   
   const handleCountChange = (value) => {
     if (Number.isNaN(value)) return;
@@ -52,6 +52,12 @@ function ControlPanel() {
           />
           Отображать сетку
         </div>
+      </div>
+
+      <div className="control-group" style={{textAlign: "center", marginBottom: "0"}}>
+        <Button onClick={() => resetValue()} color="primary" variant="solid">
+          Сбросить значения
+        </Button>
       </div>
     </div>
   );

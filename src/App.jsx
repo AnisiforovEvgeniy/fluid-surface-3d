@@ -88,44 +88,73 @@ function App() {
     device.queue.submit([commandEncoder.finish()]);
   }, [showGrid]);
 
-  const rebuildScene = useCallback(async () => {
-    if (isRebuildingRef.current) return;
+const rebuildScene = useCallback(async () => {
+  if (isRebuildingRef.current) return;
+  const device = deviceRef.current;
+  if (!device) return;
+  
+  isRebuildingRef.current = true;
+  try {
+    meshRef.current?.destroy();
+    gridRef.current?.destroy();
 
-    const device = deviceRef.current;
-    if (!device) return;
-
-    isRebuildingRef.current = true;
-
-    try {
-      meshRef.current?.destroy();
-      gridRef.current?.destroy();
-
-      meshRef.current = new Mesh(device, presentationFormatRef.current, countCell, sizeCell);
-      await meshRef.current.init();
-
-      gridRef.current = new Grid(device, presentationFormatRef.current, countCell, sizeCell);
-      await gridRef.current.init();
-
-      renderScene();
-    } catch (error) {
-      console.error("Ошибка при пересоздании сцены:", error);
-    } finally {
-      isRebuildingRef.current = false;
+    meshRef.current = new Mesh(device, presentationFormatRef.current, countCell, sizeCell);
+    await meshRef.current.init();
+    
+    if (!meshRef.current?.pipeline) {
+      console.error("Mesh pipeline не создан");
+      return;
     }
-  }, [countCell, sizeCell, renderScene]);
 
-
-  useEffect(() => {
-    if (deviceRef.current) {
-      rebuildScene();
+    gridRef.current = new Grid(device, presentationFormatRef.current, countCell, sizeCell);
+    await gridRef.current.init();
+    
+    if (!gridRef.current?.pipeline) {
+      console.error("Grid pipeline не создан");
+      return;
     }
-  }, [countCell, sizeCell]);
 
-  useEffect(() => {
-    if (deviceRef.current) {
-      renderScene();
+    const canvas = canvasRef.current;
+    const context = contextRef.current;
+    if (canvas && context) {
+      const commandEncoder = device.createCommandEncoder();
+      const textureView = context.getCurrentTexture().createView();
+      const multisampleView = multisampleTextureRef.current.createView();
+      
+      const renderPassDescriptor = {
+        colorAttachments: [{
+          view: multisampleView,
+          resolveTarget: textureView,
+          clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
+          loadOp: 'clear',
+          storeOp: 'discard',
+        }],
+        sampleCount: 4,
+      };
+
+      const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+      meshRef.current.render(passEncoder);
+      
+      if (showGrid && gridRef.current?.pipeline) {
+        gridRef.current.render(passEncoder);
+      }
+      
+      passEncoder.end();
+      device.queue.submit([commandEncoder.finish()]);
     }
-  }, [showGrid]);
+  } catch (error) {
+    console.error("Ошибка при пересоздании сцены:", error);
+  } finally {
+    isRebuildingRef.current = false;
+  }
+}, [countCell, sizeCell, showGrid]);
+
+
+useEffect(() => {
+  if (deviceRef.current) {
+    rebuildScene(); 
+  }
+}, [countCell, sizeCell, showGrid, rebuildScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;

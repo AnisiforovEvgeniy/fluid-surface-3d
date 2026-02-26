@@ -119,6 +119,10 @@ export class Grid {
   }
 
   render(passEncoder) {
+    if (!this.pipeline) {
+      console.warn('Pipeline не инициализирован, пропуск рендера');
+      return;
+    }
     passEncoder.setPipeline(this.pipeline);
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, 'uint16');
