@@ -18,13 +18,15 @@ export function ControlPanelProvider({ children }) {
   }
 
   const value = {
-    countCell: countCellLocalStorage,
-    setCountCell,
-    sizeCell: sizeCellLocalStorage,
-    setSizeCell,
-    showGrid: showGridLocalStorage,
-    setShowGrid,
-    resetValue
+    settings: {
+      countCell: countCellLocalStorage,
+      setCountCell,
+      sizeCell: sizeCellLocalStorage,
+      setSizeCell,
+      showGrid: showGridLocalStorage,
+      setShowGrid,
+      resetValue
+    }
   }
 
   return (

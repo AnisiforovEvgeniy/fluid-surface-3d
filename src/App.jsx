@@ -8,7 +8,7 @@ import "./index.css";
 
 function App() {
   const canvasRef = useRef(null);
-  const { countCell, sizeCell, showGrid } = useControlPanel();
+  const { settings } = useControlPanel();
 
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -79,14 +79,14 @@ function App() {
 
     meshRef.current?.render(passEncoder);
 
-    if (showGrid && gridRef.current) {
+    if (settings.showGrid && gridRef.current) {
       gridRef.current.render(passEncoder);
     }
 
     passEncoder.end();
 
     device.queue.submit([commandEncoder.finish()]);
-  }, [showGrid]);
+  }, [settings.showGrid]);
 
 const rebuildScene = useCallback(async () => {
   if (isRebuildingRef.current) return;
@@ -98,7 +98,7 @@ const rebuildScene = useCallback(async () => {
     meshRef.current?.destroy();
     gridRef.current?.destroy();
 
-    meshRef.current = new Mesh(device, presentationFormatRef.current, countCell, sizeCell);
+    meshRef.current = new Mesh(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
     await meshRef.current.init();
     
     if (!meshRef.current?.pipeline) {
@@ -106,7 +106,7 @@ const rebuildScene = useCallback(async () => {
       return;
     }
 
-    gridRef.current = new Grid(device, presentationFormatRef.current, countCell, sizeCell);
+    gridRef.current = new Grid(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
     await gridRef.current.init();
     
     if (!gridRef.current?.pipeline) {
@@ -135,7 +135,7 @@ const rebuildScene = useCallback(async () => {
       const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
       meshRef.current.render(passEncoder);
       
-      if (showGrid && gridRef.current?.pipeline) {
+      if (settings.showGrid && gridRef.current?.pipeline) {
         gridRef.current.render(passEncoder);
       }
       
@@ -147,14 +147,14 @@ const rebuildScene = useCallback(async () => {
   } finally {
     isRebuildingRef.current = false;
   }
-}, [countCell, sizeCell, showGrid]);
+}, [settings.countCell, settings.sizeCell, settings.showGrid]);
 
 
 useEffect(() => {
   if (deviceRef.current) {
     rebuildScene(); 
   }
-}, [countCell, sizeCell, showGrid, rebuildScene]);
+}, [settings.countCell, settings.sizeCell, settings.showGrid, rebuildScene]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -190,10 +190,10 @@ useEffect(() => {
 
         createMultisampleTexture(device, presentationFormat, canvas);
 
-        meshRef.current = new Mesh(device, presentationFormat, countCell, sizeCell);
+        meshRef.current = new Mesh(device, presentationFormat, settings.countCell, settings.sizeCell);
         await meshRef.current.init();
 
-        gridRef.current = new Grid(device, presentationFormat, countCell, sizeCell);
+        gridRef.current = new Grid(device, presentationFormat, settings.countCell, settings.sizeCell);
         await gridRef.current.init();
 
         renderScene();
