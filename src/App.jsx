@@ -1,6 +1,6 @@
 import { useEffect, useRef, useCallback } from "react";
-import { Mesh } from "./Mesh";
-import { Grid } from "./Grid";
+import { Mesh } from "./modules/Mesh.js";
+import { Grid } from "./modules/Grid.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import { useControlPanel } from "./context/controlPanelContext.jsx";
 import "./index.css";
