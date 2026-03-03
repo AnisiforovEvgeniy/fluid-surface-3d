@@ -25,7 +25,7 @@ function ControlPanel() {
         </label>
         <Slider
           min={2}
-          max={100}
+          max={150}
           step={1}
           onChange={handleCountChange}
           value={typeof settings.countCell === "number" ? settings.countCell : null}
@@ -35,7 +35,7 @@ function ControlPanel() {
       <div className="control-group">
         <label>Размер ячейки: {settings.sizeCell?.toFixed(2)}</label>
         <Slider
-          min={0.02}
+          min={0.01}
           max={1.0}
           step={0.01}
           onChange={handleSizeChange}

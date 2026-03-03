@@ -52,7 +52,7 @@ export class Grid {
         }],
       },
       primitive: {
-        topology: 'line-list',
+        topology: 'line-list', 
       },
       multisample: {
         count: 4,
@@ -71,7 +71,7 @@ export class Grid {
       for (let x = 0; x <= this.gridSize; x++) {
         const posX = x * this.cellSize - offsetX;
         const posY = y * this.cellSize - offsetY;
-        const posZ = 0.0;
+        const posZ = 0.0; 
         
         const u = x / this.gridSize;
         const v = y / this.gridSize;
@@ -80,20 +80,19 @@ export class Grid {
       }
     }
 
-    for (let y = 0; y < this.gridSize; y++) {
+    for (let y = 0; y <= this.gridSize; y++) {
       for (let x = 0; x < this.gridSize; x++) {
-        const topLeft = y * (this.gridSize + 1) + x;
-        const topRight = topLeft + 1;
-        const bottomLeft = (y + 1) * (this.gridSize + 1) + x;
-        const bottomRight = bottomLeft + 1;
+        const left = y * (this.gridSize + 1) + x;
+        const right = left + 1;
+        indices.push(left, right);
+      }
+    }
 
-        indices.push(topLeft, bottomLeft);     
-        indices.push(bottomLeft, topRight);     
-        indices.push(topRight, topLeft);       
-
-        indices.push(topRight, bottomLeft);
-        indices.push(bottomLeft, bottomRight); 
-        indices.push(bottomRight, topRight);   
+    for (let x = 0; x <= this.gridSize; x++) {
+      for (let y = 0; y < this.gridSize; y++) {
+        const top = y * (this.gridSize + 1) + x;
+        const bottom = top + (this.gridSize + 1);
+        indices.push(top, bottom);
       }
     }
 
@@ -118,12 +117,17 @@ export class Grid {
     this.indexCount = indices.length;
   }
 
-  render(passEncoder) {
+  render(passEncoder, bindGroup) {
     if (!this.pipeline) {
       console.warn('Pipeline не инициализирован, пропуск рендера');
       return;
     }
     passEncoder.setPipeline(this.pipeline);
+    
+    if (bindGroup) {
+      passEncoder.setBindGroup(0, bindGroup);
+    }
+    
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, 'uint16');
     passEncoder.drawIndexed(this.indexCount);

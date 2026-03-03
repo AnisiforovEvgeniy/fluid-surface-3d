@@ -113,12 +113,17 @@ export class Mesh {
     this.indexCount = indices.length;
   }
 
-  render(passEncoder) {
+  render(passEncoder, bindGroup) {
     if (!this.pipeline) {
       console.warn('Pipeline не инициализирован, пропуск рендера');
       return;
     }
     passEncoder.setPipeline(this.pipeline);
+    
+    if (bindGroup) {
+      passEncoder.setBindGroup(0, bindGroup);
+    }
+    
     passEncoder.setVertexBuffer(0, this.vertexBuffer);
     passEncoder.setIndexBuffer(this.indexBuffer, 'uint16');
     passEncoder.drawIndexed(this.indexCount);

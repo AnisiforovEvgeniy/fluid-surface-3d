@@ -1,9 +1,10 @@
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import { Mesh } from "./modules/Mesh.js";
 import { Grid } from "./modules/Grid.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import { useControlPanel } from "./context/controlPanelContext.jsx";
 import "./index.css";
+import { OrbitCamera } from "./modules/OrbitCamera.js";
 
 
 function App() {
@@ -16,8 +17,13 @@ function App() {
   const contextRef = useRef(null);
   const presentationFormatRef = useRef(null);
   const multisampleTextureRef = useRef(null);
+  const uniformBufferRef = useRef(null);
+  const meshBindGroupRef = useRef(null);
+  const gridBindGroupRef = useRef(null); 
+  const cameraRef = useRef(null);
 
   const isRebuildingRef = useRef(false);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   const createMultisampleTexture = useCallback(
     (device, presentationFormat, canvas) => {
@@ -32,7 +38,7 @@ function App() {
     [],
   );
 
-  const resizeCanvas = useCallback(() => {
+const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !deviceRef.current) return;
 
@@ -58,6 +64,8 @@ function App() {
 
     if (!canvas || !device || !context) return;
 
+    cameraRef.current?.update(device);
+
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
     const multisampleView = multisampleTextureRef.current.createView();
@@ -77,84 +85,115 @@ function App() {
 
     const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
 
-    meshRef.current?.render(passEncoder);
+    meshRef.current?.render(passEncoder, meshBindGroupRef.current);
 
     if (settings.showGrid && gridRef.current) {
-      gridRef.current.render(passEncoder);
+      gridRef.current.render(passEncoder, gridBindGroupRef.current);
     }
 
     passEncoder.end();
-
     device.queue.submit([commandEncoder.finish()]);
   }, [settings.showGrid]);
 
-const rebuildScene = useCallback(async () => {
-  if (isRebuildingRef.current) return;
-  const device = deviceRef.current;
-  if (!device) return;
-  
-  isRebuildingRef.current = true;
-  try {
-    meshRef.current?.destroy();
-    gridRef.current?.destroy();
+  useEffect(() => {
+    if (!isInitialized) return;
 
-    meshRef.current = new Mesh(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
-    await meshRef.current.init();
+    let animationFrameId;
+    const animate = () => {
+      renderScene();
+      animationFrameId = requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+    };
+  }, [isInitialized, renderScene]);
+
+  const rebuildScene = useCallback(async () => {
+    if (isRebuildingRef.current) return;
+    const device = deviceRef.current;
+    if (!device) return;
     
-    if (!meshRef.current?.pipeline) {
-      console.error("Mesh pipeline не создан");
-      return;
-    }
+    isRebuildingRef.current = true;
+    try {
+      meshRef.current?.destroy();
+      gridRef.current?.destroy();
 
-    gridRef.current = new Grid(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
-    await gridRef.current.init();
-    
-    if (!gridRef.current?.pipeline) {
-      console.error("Grid pipeline не создан");
-      return;
-    }
-
-    const canvas = canvasRef.current;
-    const context = contextRef.current;
-    if (canvas && context) {
-      const commandEncoder = device.createCommandEncoder();
-      const textureView = context.getCurrentTexture().createView();
-      const multisampleView = multisampleTextureRef.current.createView();
+      meshRef.current = new Mesh(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
+      await meshRef.current.init();
       
-      const renderPassDescriptor = {
-        colorAttachments: [{
-          view: multisampleView,
-          resolveTarget: textureView,
-          clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
-          loadOp: 'clear',
-          storeOp: 'discard',
-        }],
-        sampleCount: 4,
-      };
-
-      const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
-      meshRef.current.render(passEncoder);
-      
-      if (settings.showGrid && gridRef.current?.pipeline) {
-        gridRef.current.render(passEncoder);
+      if (!meshRef.current?.pipeline) {
+        console.error("Mesh pipeline не создан");
+        return;
       }
+
+      meshBindGroupRef.current = device.createBindGroup({
+        layout: meshRef.current.pipeline.getBindGroupLayout(0),
+        entries: [{
+          binding: 0,
+          resource: { buffer: uniformBufferRef.current }, 
+        }],
+      });
+
+      gridRef.current = new Grid(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
+      await gridRef.current.init();
       
-      passEncoder.end();
-      device.queue.submit([commandEncoder.finish()]);
+      gridBindGroupRef.current = device.createBindGroup({
+        layout: gridRef.current.pipeline.getBindGroupLayout(0), 
+        entries: [{
+          binding: 0,
+          resource: { buffer: uniformBufferRef.current }, 
+        }],
+      });
+      
+      if (!gridRef.current?.pipeline) {
+        console.error("Grid pipeline не создан");
+        return;
+      }
+
+      const canvas = canvasRef.current;
+      const context = contextRef.current;
+      if (canvas && context) {
+        const commandEncoder = device.createCommandEncoder();
+        const textureView = context.getCurrentTexture().createView();
+        const multisampleView = multisampleTextureRef.current.createView();
+        
+        const renderPassDescriptor = {
+          colorAttachments: [{
+            view: multisampleView,
+            resolveTarget: textureView,
+            clearValue: { r: 0.1, g: 0.1, b: 0.1, a: 1.0 },
+            loadOp: 'clear',
+            storeOp: 'discard',
+          }],
+          sampleCount: 4,
+        };
+
+        const passEncoder = commandEncoder.beginRenderPass(renderPassDescriptor);
+        
+        meshRef.current.render(passEncoder, meshBindGroupRef.current);
+        
+        if (settings.showGrid && gridRef.current?.pipeline) {
+          gridRef.current.render(passEncoder, meshBindGroupRef.current);
+        }
+        
+        passEncoder.end();
+        device.queue.submit([commandEncoder.finish()]);
+      }
+    } catch (error) {
+      console.error("Ошибка при пересоздании сцены:", error);
+    } finally {
+      isRebuildingRef.current = false;
     }
-  } catch (error) {
-    console.error("Ошибка при пересоздании сцены:", error);
-  } finally {
-    isRebuildingRef.current = false;
-  }
-}, [settings.countCell, settings.sizeCell, settings.showGrid]);
+  }, [settings.countCell, settings.sizeCell, settings.showGrid]);
 
-
-useEffect(() => {
-  if (deviceRef.current) {
-    rebuildScene(); 
-  }
-}, [settings.countCell, settings.sizeCell, settings.showGrid, rebuildScene]);
+  useEffect(() => {
+    if (deviceRef.current && isInitialized) {
+      rebuildScene(); 
+    }
+  }, [settings.countCell, settings.sizeCell, settings.showGrid, rebuildScene, isInitialized]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -190,13 +229,38 @@ useEffect(() => {
 
         createMultisampleTexture(device, presentationFormat, canvas);
 
+        const uniformBufferSize = 64;
+        uniformBufferRef.current = device.createBuffer({
+          size: uniformBufferSize,
+          usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+        });
+
         meshRef.current = new Mesh(device, presentationFormat, settings.countCell, settings.sizeCell);
         await meshRef.current.init();
+
+        meshBindGroupRef.current = device.createBindGroup({
+          layout: meshRef.current.pipeline.getBindGroupLayout(0),
+          entries: [{
+            binding: 0,
+            resource: { buffer: uniformBufferRef.current },
+          }],
+        });
+
+        cameraRef.current = new OrbitCamera(canvas, uniformBufferRef.current);
+        cameraRef.current.update(device);
 
         gridRef.current = new Grid(device, presentationFormat, settings.countCell, settings.sizeCell);
         await gridRef.current.init();
 
-        renderScene();
+        gridBindGroupRef.current = device.createBindGroup({
+          layout: gridRef.current.pipeline.getBindGroupLayout(0), 
+          entries: [{
+            binding: 0,
+            resource: { buffer: uniformBufferRef.current }, 
+          }],
+        });
+
+        setIsInitialized(true);
       } catch (error) {
         console.error("Ошибка инициализации WebGPU:", error);
       }

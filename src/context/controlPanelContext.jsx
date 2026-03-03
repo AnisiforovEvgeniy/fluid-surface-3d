@@ -4,7 +4,7 @@ import { useLocalStorage } from "../hook/useLocalStorage";
 const ControlPanelContext = createContext(null);
 
 export function ControlPanelProvider({ children }) {
-  const [countCellLocalStorage, setCountCellLocalStorage] = useLocalStorage("countCell", 7);
+  const [countCellLocalStorage, setCountCellLocalStorage] = useLocalStorage("countCell", 20);
   const [sizeCellLocalStorage, setSizeCellLocalStorage] = useLocalStorage("sizeCell", 0.2);
   const [showGridLocalStorage, setShowGridLocalStorage] = useLocalStorage("showGrid", true);
 
@@ -12,7 +12,7 @@ export function ControlPanelProvider({ children }) {
   const setSizeCell = (value) => setSizeCellLocalStorage(value);
   const setShowGrid = (value) => setShowGridLocalStorage(value);
   const resetValue = () => {
-    setCountCellLocalStorage(7)
+    setCountCellLocalStorage(20)
     setSizeCellLocalStorage(0.2)
     setShowGridLocalStorage(true)
   }
