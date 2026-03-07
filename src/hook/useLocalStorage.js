@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 
 export function useLocalStorage(key, initialValue) {
   const [storedValue, setStoredValue] = useState(() => {
@@ -11,9 +11,11 @@ export function useLocalStorage(key, initialValue) {
     }
   });
 
-  useEffect(() => {
+  const setValue = useCallback((value) => {
     try {
-      window.localStorage.setItem(key, JSON.stringify(storedValue));
+      const valueToStore = value instanceof Function ? value(storedValue) : value;
+      setStoredValue(valueToStore);
+      window.localStorage.setItem(key, JSON.stringify(valueToStore));
     } catch (error) {
       console.warn(`Ошибка записи ${key} в localStorage:`, error);
     }
@@ -23,13 +25,18 @@ export function useLocalStorage(key, initialValue) {
     const handleStorageChange = (e) => {
       if (e.key === key && e.newValue !== null) {
         try {
-          setStoredValue(JSON.parse(e.newValue));
+          const newValue = JSON.parse(e.newValue);
+          setStoredValue((prev) => {
+            if (JSON.stringify(prev) === e.newValue) return prev;
+            return newValue;
+          });
         } catch {}
       }
     };
+    
     window.addEventListener('storage', handleStorageChange);
     return () => window.removeEventListener('storage', handleStorageChange);
   }, [key]);
 
-  return [storedValue, setStoredValue];
+  return [storedValue, setValue];
 }

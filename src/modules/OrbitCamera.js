@@ -1,9 +1,14 @@
 import { mat4 } from 'gl-matrix';
 
 export class OrbitCamera {
-  constructor(canvas, uniformBuffer) {
+  constructor(canvas, uniformBuffer, onRadiusChange, onPreviousMouseXChange, onAzimuthChange) {
     this.canvas = canvas;
-    this.uniformBuffer = uniformBuffer; 
+    this.uniformBuffer = uniformBuffer;
+    this.onRadiusChange = onRadiusChange
+    this.onPreviousMouseXChange = onPreviousMouseXChange
+    this.onAzimuthChange = onAzimuthChange
+
+    this.isUpdatingFromExternal = false
     
     this.azimuth = 0;
     this.elevation = Math.PI / 4;
@@ -18,9 +23,37 @@ export class OrbitCamera {
 
     this.isDragging = false;
     this.previousMouseX = 0;
-    this.previousMouseY = 0;
+    // this.previousMouseY = 0;
 
     this.initEventListeners();
+  }
+
+  getAzimuthNormalized() {
+    const twoPi = Math.PI * 2;
+    return ((this.azimuth % twoPi) + twoPi) % twoPi;
+  }
+
+  setAzimuthFromSlider(targetNormalized) {
+    this.isUpdatingFromExternal = true
+    const twoPi = Math.PI * 2;
+    const currentNormalized = this.getAzimuthNormalized();
+    
+    let diff = targetNormalized - currentNormalized;
+    if (diff > Math.PI) diff -= twoPi;
+    if (diff < -Math.PI) diff += twoPi;
+    
+    this.azimuth += diff;
+    this.isUpdatingFromExternal = false;
+  }
+
+  setRadius(value) {
+    this.isUpdatingFromExternal = true;
+    this.radius = Math.max(1.0, Math.min(40.0, value));
+    this.isUpdatingFromExternal = false;
+  }
+
+  setAzimuth(value) {
+    this.azimuth = value
   }
 
   initEventListeners() {
@@ -28,7 +61,7 @@ export class OrbitCamera {
       if (e.button !== 0) return;
       this.isDragging = true;
       this.previousMouseX = e.clientX;
-      this.previousMouseY = e.clientY;
+      // this.previousMouseY = e.clientY;
     });
 
     window.addEventListener('mousemove', (e) => {
@@ -43,8 +76,13 @@ export class OrbitCamera {
       // this.elevation -= deltaY * 0.005;
       // this.elevation = Math.max(0.1, Math.min(Math.PI - 0.1, this.elevation));
 
+      if (this.onAzimuthChange && !this.isUpdatingFromExternal) {
+        this.onAzimuthChange(this.getAzimuthNormalized());
+      }
+
+
       this.previousMouseX = e.clientX;
-      this.previousMouseY = e.clientY;
+      // this.previousMouseY = e.clientY;
     });
 
     window.addEventListener('mouseup', () => {
@@ -52,8 +90,11 @@ export class OrbitCamera {
     });
 
     window.addEventListener('wheel', (e) => {
-      this.radius *= e.deltaY > 0 ? 1.1 : 0.9;
-      this.radius = Math.max(1.0, Math.min(20.0, this.radius));
+      const newRadius = this.radius * (e.deltaY > 0 ? 1.1 : 0.9);
+      this.setRadius(newRadius);
+      if (this.onRadiusChange && !this.isUpdatingFromExternal) {
+        this.onRadiusChange(this.radius);
+      }
     }, { passive: true });
   }
 

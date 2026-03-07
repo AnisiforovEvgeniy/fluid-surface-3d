@@ -119,7 +119,6 @@ export class Grid {
 
   render(passEncoder, bindGroup) {
     if (!this.pipeline) {
-      console.warn('Pipeline не инициализирован, пропуск рендера');
       return;
     }
     passEncoder.setPipeline(this.pipeline);

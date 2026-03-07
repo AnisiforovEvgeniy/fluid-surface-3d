@@ -38,3 +38,21 @@
 .control-panel .ant-slider .ant-slider-track {
   background: linear-gradient(90deg, #1e88e5 0%, #4fc3f7 100%);
 }
+
+.ant-collapse {
+  margin-bottom: 20px;
+  gap: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ant-collapse-header {
+  color: #FFFFFF !important;
+  font-size: 16px !important;
+}
+
+.ant-collapse-item-active {
+  background-color: rgba(255, 255, 255, 0.03) !important;
+  border-radius: 8px !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+}
