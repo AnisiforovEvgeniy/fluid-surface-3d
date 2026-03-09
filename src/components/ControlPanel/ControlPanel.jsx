@@ -8,9 +8,20 @@ import "./ControlPanel.css";
 function ControlPanel() {
   const {settings, camera, formSurface} = useControlPanel();
   const [valueFormSurface, setValueFormSurface] = useState(1);
+  const [valueColorMode, setValueColorMode] = useState(settings.colorMode ?? 0);
 
   const onChange = (e) => {
     setValueFormSurface(e.target.value);
+  };
+
+  useEffect(() => {
+    setValueColorMode(settings.colorMode ?? 0);
+  }, [settings.colorMode]);
+
+  const handleColorModeChange = (e) => {
+    const newValue = e.target.checked ? 1 : 0;
+    setValueColorMode(newValue);
+    settings.setColorMode(newValue);
   };
 
   useEffect(()=> {
@@ -70,6 +81,17 @@ function ControlPanel() {
                   onChange={(e) => settings.setShowGrid(e.target.checked)}
                 />
                 Отображать сетку
+              </div>
+            </div>
+
+            <div className="control-group" style={{ marginBottom: "0"}}>
+              <div style={{ display: "flex", gap: "7px", color: "#ffffff" }}>
+                <Checkbox
+                  style={{ display: "flex" }}
+                  checked={settings.colorMode === 1}
+                  onChange={handleColorModeChange}
+                />
+                Режим натяжения
               </div>
             </div>
         </div>

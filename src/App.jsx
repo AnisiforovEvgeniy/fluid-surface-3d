@@ -68,9 +68,12 @@ function App() {
   deviceRef.current.queue.writeBuffer(
     uniformBufferRef.current,
     64,
-    new Float32Array([formSurface.formSurface])
+    new Float32Array([
+      formSurface?.formSurface ?? 1,  
+      settings?.colorMode ?? 0        
+    ])
   );
-}, [formSurface.formSurface]);
+}, [formSurface?.formSurface, settings?.colorMode]); 
 
   const renderScene = useCallback(() => {
     if (isRebuildingRef.current || !isReadyRef.current) return;

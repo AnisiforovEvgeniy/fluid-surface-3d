@@ -7,6 +7,7 @@ export function ControlPanelProvider({ children }) {
   const [countCellLocalStorage, setCountCellLocalStorage] = useLocalStorage("countCell", 20);
   const [sizeCellLocalStorage, setSizeCellLocalStorage] = useLocalStorage("sizeCell", 0.2);
   const [showGridLocalStorage, setShowGridLocalStorage] = useLocalStorage("showGrid", true);
+  const [colorModeLocalStorage, setColorModeLocalStorage] = useLocalStorage("colorMode", 0);
 
   const [formSurfaceLocalStorage, setformSurfaceLocalStorage] = useLocalStorage("formSurface", 1);
 
@@ -16,6 +17,7 @@ export function ControlPanelProvider({ children }) {
   const setCountCell = (value) => setCountCellLocalStorage(value);
   const setSizeCell = (value) => setSizeCellLocalStorage(value);
   const setShowGrid = (value) => setShowGridLocalStorage(value);
+  const setColorMode = (value) => setColorModeLocalStorage(value);
 
   const setformSurface = (value) => setformSurfaceLocalStorage(value)
 
@@ -26,6 +28,7 @@ export function ControlPanelProvider({ children }) {
     setCountCellLocalStorage(20)
     setSizeCellLocalStorage(0.2)
     setShowGridLocalStorage(true)
+    setColorModeLocalStorage(0);
 
     setformSurfaceLocalStorage(1)
 
@@ -41,6 +44,8 @@ export function ControlPanelProvider({ children }) {
       setSizeCell,
       showGrid: showGridLocalStorage,
       setShowGrid,
+      colorMode: colorModeLocalStorage,
+      setColorMode,
       resetValue
     },
     formSurface: {
