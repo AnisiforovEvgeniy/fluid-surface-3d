@@ -57,6 +57,11 @@ export class Grid {
       multisample: {
         count: 4,
       },
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: 'less',
+        format: 'depth24plus',
+      },
     });
   }
 

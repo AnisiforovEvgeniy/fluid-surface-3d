@@ -7,12 +7,18 @@ export function ControlPanelProvider({ children }) {
   const [countCellLocalStorage, setCountCellLocalStorage] = useLocalStorage("countCell", 20);
   const [sizeCellLocalStorage, setSizeCellLocalStorage] = useLocalStorage("sizeCell", 0.2);
   const [showGridLocalStorage, setShowGridLocalStorage] = useLocalStorage("showGrid", true);
-  const [radiusCameraLocalStorage, setRadiusCameraLocalStorage] = useLocalStorage("radiusCamera", 7);
+
+  const [formSurfaceLocalStorage, setformSurfaceLocalStorage] = useLocalStorage("formSurface", 1);
+
+  const [radiusCameraLocalStorage, setRadiusCameraLocalStorage] = useLocalStorage("radiusCamera", 15);
   const [azimuthCameraLocalStorage, setAzimuthCameraLocalStorage] = useLocalStorage("azimuthCamera", 0);
 
   const setCountCell = (value) => setCountCellLocalStorage(value);
   const setSizeCell = (value) => setSizeCellLocalStorage(value);
   const setShowGrid = (value) => setShowGridLocalStorage(value);
+
+  const setformSurface = (value) => setformSurfaceLocalStorage(value)
+
   const setRadiusCamera = (value) => setRadiusCameraLocalStorage(value);
   const setAzimuthCamera = (value) => setAzimuthCameraLocalStorage(value);
   
@@ -20,7 +26,10 @@ export function ControlPanelProvider({ children }) {
     setCountCellLocalStorage(20)
     setSizeCellLocalStorage(0.2)
     setShowGridLocalStorage(true)
-    setRadiusCameraLocalStorage(7)
+
+    setformSurfaceLocalStorage(1)
+
+    setRadiusCameraLocalStorage(15)
     setAzimuthCameraLocalStorage(0)
   }
 
@@ -33,6 +42,10 @@ export function ControlPanelProvider({ children }) {
       showGrid: showGridLocalStorage,
       setShowGrid,
       resetValue
+    },
+    formSurface: {
+      formSurface: formSurfaceLocalStorage,
+      setformSurface
     },
     camera: {
       radiusCamera: radiusCameraLocalStorage,

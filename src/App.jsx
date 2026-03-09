@@ -8,7 +8,7 @@ import { OrbitCamera } from "./modules/OrbitCamera.js";
 
 function App() {
   const canvasRef = useRef(null);
-  const { settings, camera } = useControlPanel();
+  const { settings, camera, formSurface } = useControlPanel();
   
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -16,6 +16,7 @@ function App() {
   const contextRef = useRef(null);
   const presentationFormatRef = useRef(null);
   const multisampleTextureRef = useRef(null);
+  const depthTextureRef = useRef(null);
   const uniformBufferRef = useRef(null);
   const meshBindGroupRef = useRef(null);
   const gridBindGroupRef = useRef(null);
@@ -36,6 +37,16 @@ function App() {
     });
   }, []);
 
+  const createDepthTexture = useCallback((device, canvas) => {
+    depthTextureRef.current?.destroy();
+    depthTextureRef.current = device.createTexture({
+      size: [canvas.width, canvas.height],
+      sampleCount: 4, 
+      format: 'depth24plus',
+      usage: GPUTextureUsage.RENDER_ATTACHMENT,
+    });
+  }, []);
+
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !deviceRef.current) return;
@@ -46,9 +57,20 @@ function App() {
     if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
       canvas.width = displayWidth;
       canvas.height = displayHeight;
+      createDepthTexture(deviceRef.current, canvas)
       createMultisampleTexture(deviceRef.current, presentationFormatRef.current, canvas);
     }
-  }, [createMultisampleTexture]);
+  }, [createMultisampleTexture, createDepthTexture]);
+
+  const updateUniformBuffer = useCallback(() => {
+  if (!uniformBufferRef.current || !deviceRef.current) return;
+  
+  deviceRef.current.queue.writeBuffer(
+    uniformBufferRef.current,
+    64,
+    new Float32Array([formSurface.formSurface])
+  );
+}, [formSurface.formSurface]);
 
   const renderScene = useCallback(() => {
     if (isRebuildingRef.current || !isReadyRef.current) return;
@@ -60,13 +82,16 @@ function App() {
     if (!canvas || !device || !context) return;
     if (!meshRef.current?.pipeline) return;
     if (!multisampleTextureRef.current) return;
+    if (!depthTextureRef.current) return;
 
     cameraRef.current?.update(device);
 
+    updateUniformBuffer();
+
     const commandEncoder = device.createCommandEncoder();
     const textureView = context.getCurrentTexture().createView();
-    
     const multisampleView = multisampleTextureRef.current.createView();
+    const depthView = depthTextureRef.current.createView();
 
     const renderPassDescriptor = {
       colorAttachments: [
@@ -78,6 +103,12 @@ function App() {
           storeOp: "discard",
         },
       ],
+        depthStencilAttachment: { 
+        view: depthView,
+        depthClearValue: 1.0,
+        depthLoadOp: "clear",
+        depthStoreOp: "discard",
+      },
       sampleCount: 4,
     };
 
@@ -93,7 +124,7 @@ function App() {
 
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
-  }, [settings.showGrid]);
+  }, [settings.showGrid, updateUniformBuffer]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -196,8 +227,9 @@ function App() {
         });
 
         createMultisampleTexture(device, presentationFormat, canvas);
+        createDepthTexture(device, canvas)
 
-        const uniformBufferSize = 64;
+        const uniformBufferSize = 80;
         uniformBufferRef.current = device.createBuffer({
           size: uniformBufferSize,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,

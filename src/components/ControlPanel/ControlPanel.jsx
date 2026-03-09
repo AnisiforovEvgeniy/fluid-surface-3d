@@ -1,10 +1,21 @@
-import { Button, Checkbox, Slider, Collapse } from "antd";
+import { useEffect, useState } from "react";
 import { useControlPanel } from "../../context/controlPanelContext";
+import { Button, Checkbox, Slider, Collapse, Radio } from "antd";
 import "./ControlPanel.css";
 
 
+
 function ControlPanel() {
-  const {settings, camera} = useControlPanel();
+  const {settings, camera, formSurface} = useControlPanel();
+  const [valueFormSurface, setValueFormSurface] = useState(1);
+
+  const onChange = (e) => {
+    setValueFormSurface(e.target.value);
+  };
+
+  useEffect(()=> {
+    formSurface.setformSurface(valueFormSurface)
+  }, [valueFormSurface])
   
   const handleCountChange = (value) => {
     if (Number.isNaN(value)) return;
@@ -65,6 +76,25 @@ function ControlPanel() {
     },
     {
       key: '2',
+      label: 'Настройки формы поверхности',
+      children: 
+        <Radio.Group
+          style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+          onChange={onChange}
+          value={valueFormSurface}
+          options={[
+            { value: 1, label: 'x' },
+            { value: 2, label: 'x²' },
+            { value: 3, label: 'x³' },
+            { value: 4, label: '|x|' },
+            { value: 5, label: '√x' },
+            { value: 6, label: '1/x' },
+            { value: 7, label: 'sin(x)' },
+          ]}
+        />
+    },
+    {
+      key: '3',
       label: 'Настройки камеры',
       children: 
         <div>
