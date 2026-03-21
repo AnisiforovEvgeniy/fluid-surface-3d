@@ -1,15 +1,18 @@
 import { useEffect, useRef, useCallback, useState } from "react";
+import { observer } from "mobx-react-lite";
 import { Mesh } from "./modules/Mesh.js";
 import { Grid } from "./modules/Grid.js";
-import ControlPanel from "./components/ControlPanel/ControlPanel";
-import { useControlPanel } from "./context/controlPanelContext.jsx";
-import "./index.css";
 import { OrbitCamera } from "./modules/OrbitCamera.js";
+import { useStore } from "./hook/useStore.js";
+import ControlPanel from "./components/ControlPanel/ControlPanel";
+import "./index.css";
+
 
 function App() {
   const canvasRef = useRef(null);
-  const { settings, camera, formSurface } = useControlPanel();
-  
+  const store = useStore();
+  const { settings, formSurface } = store
+
   const meshRef = useRef(null);
   const gridRef = useRef(null);
   const deviceRef = useRef(null);
@@ -251,7 +254,7 @@ function App() {
           }],
         });
 
-        cameraRef.current = new OrbitCamera(canvas, uniformBufferRef.current, (newRadius) => camera.setRadiusCamera(newRadius), (newAzimuth) => camera.setAzimuthCamera(newAzimuth));
+        cameraRef.current = new OrbitCamera(canvas, uniformBufferRef.current);
         cameraRef.current.update(device);
 
         gridRef.current = new Grid(device, presentationFormat, settings.countCell, settings.sizeCell);
@@ -288,31 +291,6 @@ function App() {
     };
   }, []);
 
-
-  useEffect(() => {
-    if (!cameraRef.current || typeof camera?.azimuthCamera !== 'number') return;
-    
-    if (cameraRef.current.isDragging) return;
-    
-    const current = cameraRef.current.getAzimuthNormalized();
-    const target = camera.azimuthCamera;
-    const diff = Math.abs(current - target);
-    
-    if (diff > 0.01) {
-      cameraRef.current.setAzimuthFromSlider(target);
-    }
-  }, [camera.azimuthCamera]);
-
-  useEffect(() => {
-    if (!cameraRef.current || typeof camera.radiusCamera !== 'number') return;
-    if (cameraRef.current.isDragging) return;
-    
-    const diff = Math.abs(cameraRef.current.radius - camera.radiusCamera);
-    if (diff > 0.01) {
-      cameraRef.current.setRadius(camera.radiusCamera);
-    }
-  }, [camera.radiusCamera]);
-
   return (
     <div className="canvas-container">
       <canvas id="canvas" ref={canvasRef}></canvas>
@@ -321,4 +299,4 @@ function App() {
   );
 }
 
-export default App;
+export default observer(App);

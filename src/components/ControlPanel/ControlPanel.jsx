@@ -1,33 +1,22 @@
-import { useEffect, useState } from "react";
-import { useControlPanel } from "../../context/controlPanelContext";
+
 import { Button, Checkbox, Slider, Collapse, Radio } from "antd";
+import { observer } from "mobx-react-lite";
+import { useStore } from "../../hook/useStore";
 import "./ControlPanel.css";
 
-
-
 function ControlPanel() {
-  const {settings, camera, formSurface} = useControlPanel();
-  const [valueFormSurface, setValueFormSurface] = useState(1);
-  const [valueColorMode, setValueColorMode] = useState(settings.colorMode ?? 0);
+  const store = useStore();
+  const {settings, camera, formSurface} = store
 
-  const onChange = (e) => {
-    setValueFormSurface(e.target.value);
+  const handleFormModeChange = (e) => {
+    formSurface.setformSurface(e.target.value);
   };
-
-  useEffect(() => {
-    setValueColorMode(settings.colorMode ?? 0);
-  }, [settings.colorMode]);
 
   const handleColorModeChange = (e) => {
     const newValue = e.target.checked ? 1 : 0;
-    setValueColorMode(newValue);
     settings.setColorMode(newValue);
   };
 
-  useEffect(()=> {
-    formSurface.setformSurface(valueFormSurface)
-  }, [valueFormSurface])
-  
   const handleCountChange = (value) => {
     if (Number.isNaN(value)) return;
     settings.setCountCell(value);
@@ -88,7 +77,7 @@ function ControlPanel() {
               <div style={{ display: "flex", gap: "7px", color: "#ffffff" }}>
                 <Checkbox
                   style={{ display: "flex" }}
-                  checked={settings.colorMode === 1}
+                  checked={settings.colorMode}
                   onChange={handleColorModeChange}
                 />
                 Режим натяжения
@@ -102,8 +91,8 @@ function ControlPanel() {
       children: 
         <Radio.Group
           style={{ display: "flex", flexDirection: "column", gap: "5px" }}
-          onChange={onChange}
-          value={valueFormSurface}
+          onChange={handleFormModeChange}
+          value={formSurface.formSurface}
           options={[
             { value: 1, label: 'x' },
             { value: 2, label: 'x²' },
@@ -168,4 +157,4 @@ function ControlPanel() {
   );
 }
 
-export default ControlPanel;
+export default observer(ControlPanel);
