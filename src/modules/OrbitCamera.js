@@ -37,7 +37,7 @@ export class OrbitCamera {
       const deltaX = e.clientX - this.previousMouseX;
       this.azimuth += deltaX * 0.005;
       
-      store.camera.azimuthCamera(this.azimuth)
+      store.camera.azimuthCamera = this.azimuth;
 
       this.previousMouseX = e.clientX;
     });
@@ -51,7 +51,7 @@ export class OrbitCamera {
       const newRadius = this.radius * (e.deltaY > 0 ? 1.1 : 0.9);
       this.radius = Math.max(1.0, Math.min(40.0, newRadius));
       
-      store.camera.radiusCamera(this.radius)
+      store.camera.radiusCamera = this.radius;
     }, { passive: false });
   }
 
