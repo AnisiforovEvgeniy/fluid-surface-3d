@@ -3,6 +3,7 @@ import { observer } from "mobx-react-lite";
 import { Mesh } from "./modules/Mesh.js";
 import { Grid } from "./modules/Grid.js";
 import { OrbitCamera } from "./modules/OrbitCamera.js";
+import { FluidSystem } from "./modules/FluidSystem.js";
 import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import "./index.css";
@@ -11,7 +12,7 @@ import "./index.css";
 function App() {
   const canvasRef = useRef(null);
   const store = useStore();
-  const { settings, formSurface } = store
+  const { settings, formSurface, fluid } = store
 
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -25,6 +26,8 @@ function App() {
   const gridBindGroupRef = useRef(null);
   const cameraRef = useRef(null);
   const animationFrameRef = useRef(null);
+  const fluidRef = useRef(null);           
+  const fluidBindGroupRef = useRef(null); 
   
   const isRebuildingRef = useRef(false);
   const isReadyRef = useRef(false);
@@ -128,9 +131,17 @@ function App() {
       gridRef.current.render(passEncoder, gridBindGroupRef.current);
     }
 
+    if (fluidRef.current?.renderPipeline && fluid.fluidMode) {
+      fluidRef.current.update(0.016, cameraRef.current.viewProjectionMatrix, { 
+        spawnRate: 2000
+      });
+      
+      fluidRef.current.render(passEncoder, cameraRef.current.getViewProjectionNoModel(), {});
+    }
+
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
-  }, [settings.showGrid, updateUniformBuffer]);
+  }, [settings.showGrid, fluid.fluidMode, updateUniformBuffer]);
 
   useEffect(() => {
     if (!isInitialized) return;
@@ -270,6 +281,26 @@ function App() {
           }],
         });
 
+        fluidRef.current = new FluidSystem(device, presentationFormat, 5000);
+        await fluidRef.current.init();
+
+        fluidBindGroupRef.current = {
+          compute: device.createBindGroup({
+            layout: fluidRef.current.computePipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: fluidRef.current.particleBuffer } },
+              { binding: 1, resource: { buffer: fluidRef.current.computeUniformBuffer } },
+            ],
+          }),
+          render: device.createBindGroup({
+            layout: fluidRef.current.renderPipeline.getBindGroupLayout(0),
+            entries: [
+              { binding: 0, resource: { buffer: fluidRef.current.particleBuffer } },
+              { binding: 1, resource: { buffer: fluidRef.current.renderUniformBuffer } },
+            ],
+          }),
+        };
+
         isReadyRef.current = true;
         setIsInitialized(true);
       } catch (error) {
@@ -284,12 +315,14 @@ function App() {
     return () => {
       window.removeEventListener("resize", resizeCanvas);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-      meshRef.current?.destroy();
-      gridRef.current?.destroy();
-      multisampleTextureRef.current?.destroy();
-      uniformBufferRef.current?.destroy();
-    };
-  }, []);
+        meshRef.current?.destroy();
+        gridRef.current?.destroy();
+        fluidRef.current?.destroy();
+        multisampleTextureRef.current?.destroy();
+        depthTextureRef.current?.destroy();
+        uniformBufferRef.current?.destroy();
+      };
+    }, []);
 
   return (
     <div className="canvas-container">

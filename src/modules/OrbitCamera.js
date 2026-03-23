@@ -6,7 +6,6 @@ export class OrbitCamera {
     this.canvas = canvas;
     this.uniformBuffer = uniformBuffer;
     
-    // Инициализация из стора
     this.azimuth = store.camera.azimuthCamera;
     this.elevation = Math.PI / 4;
     this.radius = store.camera.radiusCamera;
@@ -14,6 +13,7 @@ export class OrbitCamera {
     this.viewMatrix = mat4.create();
     this.projectionMatrix = mat4.create();
     this.viewProjectionMatrix = mat4.create();
+    this.viewProjectionMatrixNoModel = mat4.create(); // ← НОВОЕ (для частиц)
     this.modelMatrix = mat4.create(); 
     
     mat4.rotateX(this.modelMatrix, this.modelMatrix, -Math.PI / 2);
@@ -37,7 +37,7 @@ export class OrbitCamera {
       const deltaX = e.clientX - this.previousMouseX;
       this.azimuth += deltaX * 0.005;
       
-      store.camera.azimuthCamera = this.azimuth;
+      store.camera.azimuthCamera(this.azimuth)
 
       this.previousMouseX = e.clientX;
     });
@@ -51,7 +51,7 @@ export class OrbitCamera {
       const newRadius = this.radius * (e.deltaY > 0 ? 1.1 : 0.9);
       this.radius = Math.max(1.0, Math.min(40.0, newRadius));
       
-      store.camera.radiusCamera = this.radius;
+      store.camera.radiusCamera(this.radius)
     }, { passive: false });
   }
 
@@ -74,8 +74,15 @@ export class OrbitCamera {
     
     const viewProjection = mat4.create();
     mat4.multiply(viewProjection, this.projectionMatrix, this.viewMatrix);
+    
     mat4.multiply(this.viewProjectionMatrix, viewProjection, this.modelMatrix);
+    
+    mat4.copy(this.viewProjectionMatrixNoModel, viewProjection);
 
     device.queue.writeBuffer(this.uniformBuffer, 0, this.viewProjectionMatrix);
+  }
+
+  getViewProjectionNoModel() {
+    return this.viewProjectionMatrixNoModel;
   }
 }

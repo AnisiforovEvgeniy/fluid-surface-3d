@@ -2,6 +2,7 @@ import { makeAutoObservable, reaction } from "mobx";
 import { CameraStore } from "./CameraStore";
 import { RenderSettingsStore } from "./RenderSettingsStore";
 import { FormSurfaceStore } from "./FormSurfaceStore";
+import { FluidStore } from "./FluidStore";
 
 const STORAGE_KEY = "controlPanelSettings";
 
@@ -10,13 +11,12 @@ class RootStore {
     this.camera = new CameraStore();
     this.settings = new RenderSettingsStore();
     this.formSurface = new FormSurfaceStore();
+    this.fluid = new FluidStore()
 
     makeAutoObservable(this);
 
-    // Загружаем при старте
     this.loadFromStorage();
 
-    // Автосохранение при ЛЮБОМ изменении
     reaction(
       () => this.toJSON(),
       (data) => localStorage.setItem(STORAGE_KEY, JSON.stringify(data))
@@ -27,6 +27,7 @@ class RootStore {
     this.camera.reset();
     this.settings.reset();
     this.formSurface.reset();
+    this.fluid.reset()
   };
 
   toJSON() {
@@ -34,6 +35,7 @@ class RootStore {
       settings: this.settings.toJSON(),
       camera: this.camera.toJSON(),
       formSurface: this.formSurface.toJSON(),
+      fluid: this.fluid.toJSON()
     };
   }
 
@@ -45,6 +47,7 @@ class RootStore {
         if (data.settings) Object.assign(this.settings, data.settings);
         if (data.camera) Object.assign(this.camera, data.camera);
         if (data.formSurface) Object.assign(this.formSurface, data.formSurface);
+        if (data.fluid) Object.assign(this.fluid, data.fluid);
       }
     } catch (e) {
       console.error("Failed to load settings", e);

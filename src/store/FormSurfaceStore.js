@@ -1,6 +1,5 @@
 import { makeAutoObservable } from "mobx";
 
-const STORAGE_KEY = "formSurfaceSettings";
 
 export class FormSurfaceStore {
   formSurface = 1;
