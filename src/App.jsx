@@ -8,11 +8,10 @@ import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import "./index.css";
 
-
 function App() {
   const canvasRef = useRef(null);
   const store = useStore();
-  const { settings, formSurface, fluid } = store
+  const { settings, formSurface, fluid } = store;
 
   const meshRef = useRef(null);
   const gridRef = useRef(null);
@@ -26,9 +25,8 @@ function App() {
   const gridBindGroupRef = useRef(null);
   const cameraRef = useRef(null);
   const animationFrameRef = useRef(null);
-  const fluidRef = useRef(null);           
-  const fluidBindGroupRef = useRef(null); 
-  
+  const fluidRef = useRef(null);
+
   const isRebuildingRef = useRef(false);
   const isReadyRef = useRef(false);
   const [isInitialized, setIsInitialized] = useState(false);
@@ -47,8 +45,8 @@ function App() {
     depthTextureRef.current?.destroy();
     depthTextureRef.current = device.createTexture({
       size: [canvas.width, canvas.height],
-      sampleCount: 4, 
-      format: 'depth24plus',
+      sampleCount: 4,
+      format: "depth24plus",
       usage: GPUTextureUsage.RENDER_ATTACHMENT,
     });
   }, []);
@@ -56,6 +54,7 @@ function App() {
   const resizeCanvas = useCallback(() => {
     const canvas = canvasRef.current;
     if (!canvas || !deviceRef.current) return;
+
     const dpr = window.devicePixelRatio || 1;
     const displayWidth = Math.floor(canvas.clientWidth * dpr);
     const displayHeight = Math.floor(canvas.clientHeight * dpr);
@@ -63,38 +62,37 @@ function App() {
     if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
       canvas.width = displayWidth;
       canvas.height = displayHeight;
-      createDepthTexture(deviceRef.current, canvas)
+      createDepthTexture(deviceRef.current, canvas);
       createMultisampleTexture(deviceRef.current, presentationFormatRef.current, canvas);
     }
   }, [createMultisampleTexture, createDepthTexture]);
 
   const updateUniformBuffer = useCallback(() => {
-  if (!uniformBufferRef.current || !deviceRef.current) return;
-  
-  deviceRef.current.queue.writeBuffer(
-    uniformBufferRef.current,
-    64,
-    new Float32Array([
-      formSurface?.formSurface ?? 1,  
-      settings?.colorMode ?? 0        
-    ])
-  );
-}, [formSurface?.formSurface, settings?.colorMode]); 
+    if (!uniformBufferRef.current || !deviceRef.current) return;
+
+    deviceRef.current.queue.writeBuffer(
+      uniformBufferRef.current,
+      64,
+      new Float32Array([
+        formSurface?.formSurface ?? 1,
+        settings?.colorMode ?? 0,
+      ])
+    );
+  }, [formSurface?.formSurface, settings?.colorMode]);
 
   const renderScene = useCallback(() => {
     if (isRebuildingRef.current || !isReadyRef.current) return;
-    
+
     const canvas = canvasRef.current;
     const device = deviceRef.current;
     const context = contextRef.current;
-    
+
     if (!canvas || !device || !context) return;
     if (!meshRef.current?.pipeline) return;
     if (!multisampleTextureRef.current) return;
     if (!depthTextureRef.current) return;
 
     cameraRef.current?.update(device);
-
     updateUniformBuffer();
 
     const commandEncoder = device.createCommandEncoder();
@@ -112,7 +110,7 @@ function App() {
           storeOp: "discard",
         },
       ],
-        depthStencilAttachment: { 
+      depthStencilAttachment: {
         view: depthView,
         depthClearValue: 1.0,
         depthLoadOp: "clear",
@@ -132,20 +130,40 @@ function App() {
     }
 
     if (fluidRef.current?.renderPipeline && fluid.fluidMode) {
-      fluidRef.current.update(0.016, cameraRef.current.viewProjectionMatrix, { 
-        spawnRate: 2000
+      fluidRef.current.update(0.016, {
+        spawnRate: 1800,
+        gridSize: settings.countCell,
+        cellSize: settings.sizeCell,
+        formSurface: formSurface.formSurface,
+        spawnPos: [0.0, 10.0, 0.0],
+        gravity: 9.81,
+        maxLifetime: 1000000.0,
+        restitution: 0.32,
+        friction: 0.985,
+        stickThreshold: 1.1,
+        collisionOffset: 0.03,
       });
-      
-      fluidRef.current.render(passEncoder, cameraRef.current.getViewProjectionNoModel(), {});
+
+      fluidRef.current.render(passEncoder, cameraRef.current.getViewProjectionNoModel(), {
+        particleSize: 1.0,
+        baseColor: [0.2, 0.6, 1.0, 1.0],
+      });
     }
 
     passEncoder.end();
     device.queue.submit([commandEncoder.finish()]);
-  }, [settings.showGrid, fluid.fluidMode, updateUniformBuffer]);
+  }, [
+    settings.showGrid,
+    settings.countCell,
+    settings.sizeCell,
+    formSurface.formSurface,
+    fluid.fluidMode,
+    updateUniformBuffer,
+  ]);
 
   useEffect(() => {
     if (!isInitialized) return;
-    
+
     const animate = () => {
       renderScene();
       animationFrameRef.current = requestAnimationFrame(animate);
@@ -170,38 +188,57 @@ function App() {
       try {
         meshBindGroupRef.current = null;
         gridBindGroupRef.current = null;
+
         meshRef.current?.destroy();
         gridRef.current?.destroy();
 
         const device = deviceRef.current;
 
-        meshRef.current = new Mesh(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
+        meshRef.current = new Mesh(
+          device,
+          presentationFormatRef.current,
+          settings.countCell,
+          settings.sizeCell
+        );
         await meshRef.current.init();
-        
-        if (!meshRef.current?.pipeline) throw new Error("Mesh pipeline не создан");
+
+        if (!meshRef.current?.pipeline) {
+          throw new Error("Mesh pipeline не создан");
+        }
 
         meshBindGroupRef.current = device.createBindGroup({
           layout: meshRef.current.pipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBufferRef.current },
-          }],
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
         });
 
-        gridRef.current = new Grid(device, presentationFormatRef.current, settings.countCell, settings.sizeCell);
+        gridRef.current = new Grid(
+          device,
+          presentationFormatRef.current,
+          settings.countCell,
+          settings.sizeCell
+        );
         await gridRef.current.init();
-        
-        if (!gridRef.current?.pipeline) throw new Error("Grid pipeline не создан");
+
+        if (!gridRef.current?.pipeline) {
+          throw new Error("Grid pipeline не создан");
+        }
 
         gridBindGroupRef.current = device.createBindGroup({
           layout: gridRef.current.pipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBufferRef.current },
-          }],
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
         });
 
-        isReadyRef.current = true; 
+        isReadyRef.current = true;
       } catch (error) {
         console.error("Ошибка при пересоздании сцены: ", error);
         isReadyRef.current = false;
@@ -238,68 +275,70 @@ function App() {
         canvas.height = Math.floor(canvas.clientHeight * dpr);
 
         context.configure({
-          device: device,
+          device,
           format: presentationFormat,
           alphaMode: "premultiplied",
         });
 
         createMultisampleTexture(device, presentationFormat, canvas);
-        createDepthTexture(device, canvas)
+        createDepthTexture(device, canvas);
 
+        // mat4 (64) + 2 float + padding = 80
         const uniformBufferSize = 80;
         uniformBufferRef.current = device.createBuffer({
           size: uniformBufferSize,
           usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
         });
 
-        meshRef.current = new Mesh(device, presentationFormat, settings.countCell, settings.sizeCell);
+        meshRef.current = new Mesh(
+          device,
+          presentationFormat,
+          settings.countCell,
+          settings.sizeCell
+        );
         await meshRef.current.init();
 
-        if (!meshRef.current?.pipeline) throw new Error("Mesh pipeline не создан");
+        if (!meshRef.current?.pipeline) {
+          throw new Error("Mesh pipeline не создан");
+        }
 
         meshBindGroupRef.current = device.createBindGroup({
           layout: meshRef.current.pipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBufferRef.current },
-          }],
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
         });
 
         cameraRef.current = new OrbitCamera(canvas, uniformBufferRef.current);
         cameraRef.current.update(device);
 
-        gridRef.current = new Grid(device, presentationFormat, settings.countCell, settings.sizeCell);
+        gridRef.current = new Grid(
+          device,
+          presentationFormat,
+          settings.countCell,
+          settings.sizeCell
+        );
         await gridRef.current.init();
 
-        if (!gridRef.current?.pipeline) throw new Error("Grid pipeline не создан");
+        if (!gridRef.current?.pipeline) {
+          throw new Error("Grid pipeline не создан");
+        }
 
         gridBindGroupRef.current = device.createBindGroup({
           layout: gridRef.current.pipeline.getBindGroupLayout(0),
-          entries: [{
-            binding: 0,
-            resource: { buffer: uniformBufferRef.current },
-          }],
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
         });
 
-        fluidRef.current = new FluidSystem(device, presentationFormat, 5000);
+        fluidRef.current = new FluidSystem(device, presentationFormat, 50000);
         await fluidRef.current.init();
-
-        fluidBindGroupRef.current = {
-          compute: device.createBindGroup({
-            layout: fluidRef.current.computePipeline.getBindGroupLayout(0),
-            entries: [
-              { binding: 0, resource: { buffer: fluidRef.current.particleBuffer } },
-              { binding: 1, resource: { buffer: fluidRef.current.computeUniformBuffer } },
-            ],
-          }),
-          render: device.createBindGroup({
-            layout: fluidRef.current.renderPipeline.getBindGroupLayout(0),
-            entries: [
-              { binding: 0, resource: { buffer: fluidRef.current.particleBuffer } },
-              { binding: 1, resource: { buffer: fluidRef.current.renderUniformBuffer } },
-            ],
-          }),
-        };
 
         isReadyRef.current = true;
         setIsInitialized(true);
@@ -314,15 +353,19 @@ function App() {
 
     return () => {
       window.removeEventListener("resize", resizeCanvas);
-      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
-        meshRef.current?.destroy();
-        gridRef.current?.destroy();
-        fluidRef.current?.destroy();
-        multisampleTextureRef.current?.destroy();
-        depthTextureRef.current?.destroy();
-        uniformBufferRef.current?.destroy();
-      };
-    }, []);
+
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+
+      meshRef.current?.destroy();
+      gridRef.current?.destroy();
+      fluidRef.current?.destroy();
+      multisampleTextureRef.current?.destroy();
+      depthTextureRef.current?.destroy();
+      uniformBufferRef.current?.destroy();
+    };
+  }, [createDepthTexture, createMultisampleTexture, resizeCanvas, settings.countCell, settings.sizeCell]);
 
   return (
     <div className="canvas-container">
