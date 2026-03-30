@@ -7,6 +7,7 @@ import { FluidSystem } from "./modules/FluidSystem.js";
 import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import "./index.css";
+import TensionLegend from "./components/TensionLegend/TensionLegend.jsx";
 
 function App() {
   const canvasRef = useRef(null);
@@ -371,6 +372,7 @@ function App() {
     <div className="canvas-container">
       <canvas id="canvas" ref={canvasRef}></canvas>
       <ControlPanel />
+      {!!settings.colorMode && <TensionLegend/>}
     </div>
   );
 }

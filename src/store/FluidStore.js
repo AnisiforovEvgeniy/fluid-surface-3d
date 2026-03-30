@@ -1,7 +1,7 @@
 import { makeAutoObservable } from "mobx";
 
 export class FluidStore {
-  fluidMode = false;
+  fluidMode = true;
 
   constructor() {
     makeAutoObservable(this);
