@@ -3,7 +3,7 @@ import "./TensionLegend.css"
 function TensionLegend() {
   return (
     <div className="tension-legend">
-      <div className="tension-legend__title">Натяжение</div>
+      <div className="tension-legend__title">Интенсивность изменения поверхности</div>
 
       <div className="tension-legend__scale" />
 
@@ -13,8 +13,6 @@ function TensionLegend() {
       </div>
 
       <div className="tension-legend__description">
-        Цвет показывает <b>интенсивность изменения поверхности</b>.
-        <br />
         Холодные оттенки соответствуют плавному изменению функции,
         тёплые — резкому изменению и большей крутизне.
       </div>
@@ -23,9 +21,9 @@ function TensionLegend() {
         <div className="tension-legend__item">
           <span
             className="tension-legend__dot"
-            style={{ background: "#19d36b" }}
+            style={{ background: "#0022ff" }}
           />
-          Зелёный — слабое изменение
+          Синий — слабое изменение
         </div>
 
         <div className="tension-legend__item">

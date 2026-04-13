@@ -2,7 +2,7 @@
   position: fixed;
   top: 48px;
   right: 32px;
-  width: 320px;
+  width: 420px;
   padding: 18px 18px 16px;
   border-radius: 14px;
   background: rgba(20, 20, 26, 0.88);
@@ -14,7 +14,7 @@
 }
 
 .tension-legend__title {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 600;
   margin-bottom: 14px;
 }
@@ -25,9 +25,11 @@
   border-radius: 16px;
   background: linear-gradient(
     90deg,
-    #19d36b 0%,
-    #ffd43b 50%,
-    #ff3b30 100%
+    #0022ff 0%,    /* синий */
+    #00d9ff 25%,   /* голубой */
+    #ffd43b 50%,   /* жёлтый */
+    #ff8c00 75%,   /* оранжевый */
+    #ff3b30 100%   /* красный */
   );
 }
 
