@@ -3,7 +3,7 @@ import "./TensionLegend.css"
 function TensionLegend() {
   return (
     <div className="tension-legend">
-      <div className="tension-legend__title">Интенсивность изменения поверхности</div>
+      <div className="tension-legend__title">Радиус кривизны поверхности</div>
 
       <div className="tension-legend__scale" />
 

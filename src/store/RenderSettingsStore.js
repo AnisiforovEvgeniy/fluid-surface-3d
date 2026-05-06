@@ -7,6 +7,7 @@ export class RenderSettingsStore {
   sizeCell = 0.2;
   showGrid = true;
   colorMode = 0;
+  showAxes = true;
 
   constructor() {
     makeAutoObservable(this);
@@ -29,11 +30,16 @@ export class RenderSettingsStore {
     this.colorMode = value;
   };
 
+  setShowAxes = (value) => {
+    this.showAxes = value;
+  };
+
   resetValue = () => {
     this.countCell = 20;
     this.sizeCell = 0.2;
     this.showGrid = true;
     this.colorMode = 0;
+    this.showAxes = true;
   };
 
   toJSON() {
@@ -42,6 +48,7 @@ export class RenderSettingsStore {
       sizeCell: this.sizeCell,
       showGrid: this.showGrid,
       colorMode: this.colorMode,
+      showAxes: this.showAxes,
     };
   }
 
@@ -54,6 +61,7 @@ export class RenderSettingsStore {
         if (data.sizeCell !== undefined) this.sizeCell = data.sizeCell;
         if (data.showGrid !== undefined) this.showGrid = data.showGrid;
         if (data.colorMode !== undefined) this.colorMode = data.colorMode;
+        if (data.showAxes !== undefined) this.showAxes = data.showAxes;
       }
     } catch (e) {
       console.error("Failed to load render settings", e);

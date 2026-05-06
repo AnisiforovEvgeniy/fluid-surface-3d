@@ -38,7 +38,7 @@ function ControlPanel() {
   const items = [
     {
       key: "1",
-      label: "Настройки сетки",
+      label: "Общие настройки",
       children: (
         <div>
           <div className="control-group">
@@ -90,6 +90,17 @@ function ControlPanel() {
                 onChange={handleColorModeChange}
               />
               Режим натяжения
+            </div>
+          </div>
+
+          <div className="control-group" style={{ marginBottom: "0" }}>
+            <div style={{ display: "flex", gap: "7px", color: "#ffffff" }}>
+              <Checkbox
+                style={{ display: "flex" }}
+                checked={!!settings.showAxes}
+                onChange={(e) => settings.setShowAxes(e.target.checked)}
+              />
+              Отображать оси XYZ
             </div>
           </div>
         </div>

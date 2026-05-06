@@ -4,6 +4,7 @@ import { Mesh } from "./modules/Mesh.js";
 import { Grid } from "./modules/Grid.js";
 import { OrbitCamera } from "./modules/OrbitCamera.js";
 import { FluidSystem } from "./modules/FluidSystem.js";
+import { Axes } from "./modules/Axes.js";
 import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
 import "./index.css";
@@ -27,6 +28,8 @@ function App() {
   const cameraRef = useRef(null);
   const animationFrameRef = useRef(null);
   const fluidRef = useRef(null);
+  const axesRef = useRef(null);
+  const axesBindGroupRef = useRef(null);
 
   const isRebuildingRef = useRef(false);
   const isReadyRef = useRef(false);
@@ -130,6 +133,10 @@ function App() {
       gridRef.current.render(passEncoder, gridBindGroupRef.current);
     }
 
+    if (settings.showAxes && axesRef.current?.pipeline && axesBindGroupRef.current) {
+      axesRef.current.render(passEncoder, axesBindGroupRef.current);
+    }
+
     if (fluidRef.current?.renderPipeline && fluid.fluidMode) {
       fluidRef.current.update(0.016, {
         spawnRate: 1800,
@@ -159,6 +166,7 @@ function App() {
     settings.sizeCell,
     formSurface.formSurface,
     fluid.fluidMode,
+    settings.showAxes,
     updateUniformBuffer,
   ]);
 
@@ -189,9 +197,11 @@ function App() {
       try {
         meshBindGroupRef.current = null;
         gridBindGroupRef.current = null;
+        axesBindGroupRef.current = null;
 
         meshRef.current?.destroy();
         gridRef.current?.destroy();
+        axesRef.current?.destroy();
 
         const device = deviceRef.current;
 
@@ -239,6 +249,24 @@ function App() {
           ],
         });
 
+        axesRef.current = new Axes(
+          device,
+          presentationFormatRef.current,
+          settings.countCell * settings.sizeCell * 1.5
+        );
+
+        await axesRef.current.init();
+
+        axesBindGroupRef.current = device.createBindGroup({
+          layout: axesRef.current.pipeline.getBindGroupLayout(0),
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
+        });
+
         isReadyRef.current = true;
       } catch (error) {
         console.error("Ошибка при пересоздании сцены: ", error);
@@ -268,6 +296,7 @@ function App() {
 
         const context = canvas.getContext("webgpu");
         const presentationFormat = navigator.gpu.getPreferredCanvasFormat();
+
         presentationFormatRef.current = presentationFormat;
         contextRef.current = context;
 
@@ -338,6 +367,27 @@ function App() {
           ],
         });
 
+        axesRef.current = new Axes(
+          device,
+          presentationFormat,
+          settings.countCell * settings.sizeCell * 1.5
+        );
+        await axesRef.current.init();
+
+        if (!axesRef.current?.pipeline) {
+          throw new Error("Axes pipeline не создан");
+        }
+
+        axesBindGroupRef.current = device.createBindGroup({
+          layout: axesRef.current.pipeline.getBindGroupLayout(0),
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
+        });
+
         fluidRef.current = new FluidSystem(device, presentationFormat, 50000);
         await fluidRef.current.init();
 
@@ -362,6 +412,7 @@ function App() {
       meshRef.current?.destroy();
       gridRef.current?.destroy();
       fluidRef.current?.destroy();
+      axesRef.current?.destroy();
       multisampleTextureRef.current?.destroy();
       depthTextureRef.current?.destroy();
       uniformBufferRef.current?.destroy();
