@@ -142,21 +142,87 @@ function ControlPanel() {
             </div>
           </div>
 
-          <div className="control-group" style={{ marginBottom: "0" }}>
+          <div className="control-group">
             <label style={{ color: "#ffffff" }}>Режим жидкости</label>
 
             <Radio.Group
-              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: "5px",
+                marginTop: "8px",
+              }}
               value={fluid.fluidEngine}
               onChange={(e) => fluid.setFluidEngine(e.target.value)}
               options={[
-                { value: "simple", label: "Simple" },
-                { value: "hydra", label: "Hydra" },
+                { value: "simple", label: "Simple — текущая система" },
+                { value: "hydra", label: "Hydra — новая вода" },
               ]}
             />
           </div>
+
+          {fluid.fluidEngine === "hydra" && (
+            <>
+              <div className="control-group">
+                <label>
+                  Интенсивность потока: {fluid.hydraSpawnRate}
+                </label>
+
+                <Slider
+                  min={100}
+                  max={3000}
+                  step={50}
+                  value={fluid.hydraSpawnRate}
+                  onChange={(value) => fluid.setHydraSpawnRate(value)}
+                />
+              </div>
+
+              <div className="control-group">
+                <label>
+                  Время жизни частиц: {fluid.hydraLifetime.toFixed(1)} сек
+                </label>
+
+                <Slider
+                  min={1}
+                  max={12}
+                  step={0.5}
+                  value={fluid.hydraLifetime}
+                  onChange={(value) => fluid.setHydraLifetime(value)}
+                />
+              </div>
+
+              <div className="control-group">
+                <label>
+                  Сила гравитации: {fluid.hydraGravity.toFixed(2)}
+                </label>
+
+                <Slider
+                  min={1}
+                  max={25}
+                  step={0.1}
+                  tooltip={{ open: false }}
+                  value={fluid.hydraGravity}
+                  onChange={(value) => fluid.setHydraGravity(value)}
+                />
+              </div>
+
+              <div className="control-group" style={{ marginBottom: "0" }}>
+                <label>
+                  Прозрачность воды: {fluid.hydraAlpha.toFixed(2)}
+                </label>
+
+                <Slider
+                  min={0.1}
+                  max={1.0}
+                  step={0.05}
+                  value={fluid.hydraAlpha}
+                  onChange={(value) => fluid.setHydraAlpha(value)}
+                />
+              </div>
+            </>
+          )}
         </div>
-      ),
+      )
     },
     {
       key: "4",
@@ -216,7 +282,10 @@ function ControlPanel() {
           style={{ textAlign: "center", marginBottom: "0" }}
         >
           <Button
-            onClick={() => settings.resetValue()}
+            onClick={() => {
+              settings.resetValue();
+              fluid.reset();
+            }}
             color="primary"
             variant="solid"
           >

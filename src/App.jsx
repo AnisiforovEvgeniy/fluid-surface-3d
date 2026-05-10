@@ -172,8 +172,9 @@ function App() {
       if (fluid.fluidEngine === "hydra" && hydraFluidRef.current?.renderPipeline) {
         hydraFluidRef.current.update(0.016, {
           ...commonFluidSettings,
-          spawnRate: 900,
-          maxLifetime: 6.0,
+          spawnRate: fluid.hydraSpawnRate,
+          maxLifetime: fluid.hydraLifetime,
+          gravity: fluid.hydraGravity,
           restitution: 0.12,
           friction: 0.975,
           stickThreshold: 1.1,
@@ -185,7 +186,7 @@ function App() {
           cameraRef.current.getViewProjectionNoModel(),
           {
             particleSize: 1.0,
-            baseColor: [0.45, 0.9, 1.0, 0.85],
+            baseColor: [0.45, 0.9, 1.0, fluid.hydraAlpha],
           }
         );
       }
@@ -200,6 +201,10 @@ function App() {
     formSurface.formSurface,
     fluid.fluidMode,
     fluid.fluidEngine,
+    fluid.hydraSpawnRate,
+    fluid.hydraLifetime,
+    fluid.hydraGravity,
+    fluid.hydraAlpha,
     settings.showAxes,
     updateUniformBuffer,
   ]);
@@ -455,7 +460,7 @@ function App() {
       depthTextureRef.current?.destroy();
       uniformBufferRef.current?.destroy();
     };
-  }, [createDepthTexture, createMultisampleTexture, resizeCanvas, settings.countCell, settings.sizeCell]);
+  }, []);
 
   return (
     <div className="canvas-container">
