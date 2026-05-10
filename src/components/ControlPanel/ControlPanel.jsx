@@ -130,7 +130,8 @@ function ControlPanel() {
       key: "3",
       label: "Настройки жидкости",
       children: (
-        <div className="control-group" style={{ marginBottom: "0" }}>
+        <div>
+          <div className="control-group" style={{ marginBottom: "12px" }}>
             <div style={{ display: "flex", gap: "7px", color: "#ffffff" }}>
               <Checkbox
                 style={{ display: "flex" }}
@@ -140,7 +141,22 @@ function ControlPanel() {
               Включить жидкость
             </div>
           </div>
-      )
+
+          <div className="control-group" style={{ marginBottom: "0" }}>
+            <label style={{ color: "#ffffff" }}>Режим жидкости</label>
+
+            <Radio.Group
+              style={{ display: "flex", flexDirection: "column", gap: "5px" }}
+              value={fluid.fluidEngine}
+              onChange={(e) => fluid.setFluidEngine(e.target.value)}
+              options={[
+                { value: "simple", label: "Simple" },
+                { value: "hydra", label: "Hydra" },
+              ]}
+            />
+          </div>
+        </div>
+      ),
     },
     {
       key: "4",
