@@ -4,6 +4,7 @@ import { Mesh } from "./modules/Mesh.js";
 import { Grid } from "./modules/Grid.js";
 import { OrbitCamera } from "./modules/OrbitCamera.js";
 import { FluidSystem } from "./modules/FluidSystem.js";
+import { HydraFluidSystem } from "./modules/HydraFluidSystem.js";
 import { Axes } from "./modules/Axes.js";
 import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
@@ -28,6 +29,7 @@ function App() {
   const cameraRef = useRef(null);
   const animationFrameRef = useRef(null);
   const fluidRef = useRef(null);
+  const hydraFluidRef = useRef(null);
   const axesRef = useRef(null);
   const axesBindGroupRef = useRef(null);
 
@@ -137,25 +139,56 @@ function App() {
       axesRef.current.render(passEncoder, axesBindGroupRef.current);
     }
 
-    if (fluidRef.current?.renderPipeline && fluid.fluidMode) {
-      fluidRef.current.update(0.016, {
-        spawnRate: 1800,
+    if (fluid.fluidMode) {
+      const commonFluidSettings = {
         gridSize: settings.countCell,
         cellSize: settings.sizeCell,
         formSurface: formSurface.formSurface,
         spawnPos: [0.0, 10.0, 0.0],
         gravity: 9.81,
         maxLifetime: 1000000.0,
-        restitution: 0.32,
-        friction: 0.985,
-        stickThreshold: 1.1,
-        collisionOffset: 0.03,
-      });
+      };
 
-      fluidRef.current.render(passEncoder, cameraRef.current.getViewProjectionNoModel(), {
-        particleSize: 1.0,
-        baseColor: [0.2, 0.6, 1.0, 1.0],
-      });
+      if (fluid.fluidEngine === "simple" && fluidRef.current?.renderPipeline) {
+        fluidRef.current.update(0.016, {
+          ...commonFluidSettings,
+          spawnRate: 1800,
+          restitution: 0.32,
+          friction: 0.985,
+          stickThreshold: 1.1,
+          collisionOffset: 0.03,
+        });
+
+        fluidRef.current.render(
+          passEncoder,
+          cameraRef.current.getViewProjectionNoModel(),
+          {
+            particleSize: 1.0,
+            baseColor: [0.2, 0.6, 1.0, 1.0],
+          }
+        );
+      }
+
+      if (fluid.fluidEngine === "hydra" && hydraFluidRef.current?.renderPipeline) {
+        hydraFluidRef.current.update(0.016, {
+          ...commonFluidSettings,
+          spawnRate: 900,
+          maxLifetime: 6.0,
+          restitution: 0.12,
+          friction: 0.975,
+          stickThreshold: 1.1,
+          collisionOffset: 0.04,
+        });
+
+        hydraFluidRef.current.render(
+          passEncoder,
+          cameraRef.current.getViewProjectionNoModel(),
+          {
+            particleSize: 1.0,
+            baseColor: [0.45, 0.9, 1.0, 0.85],
+          }
+        );
+      }
     }
 
     passEncoder.end();
@@ -166,6 +199,7 @@ function App() {
     settings.sizeCell,
     formSurface.formSurface,
     fluid.fluidMode,
+    fluid.fluidEngine,
     settings.showAxes,
     updateUniformBuffer,
   ]);
@@ -391,6 +425,9 @@ function App() {
         fluidRef.current = new FluidSystem(device, presentationFormat, 50000);
         await fluidRef.current.init();
 
+        hydraFluidRef.current = new HydraFluidSystem(device, presentationFormat, 30000);
+        await hydraFluidRef.current.init();
+
         isReadyRef.current = true;
         setIsInitialized(true);
       } catch (error) {
@@ -412,6 +449,7 @@ function App() {
       meshRef.current?.destroy();
       gridRef.current?.destroy();
       fluidRef.current?.destroy();
+      hydraFluidRef.current?.destroy();
       axesRef.current?.destroy();
       multisampleTextureRef.current?.destroy();
       depthTextureRef.current?.destroy();
