@@ -234,6 +234,51 @@ function ControlPanel() {
                   onChange={(value) => fluid.setHydraParticleRadius(value)}
                 />
               </div>
+
+              <div className="control-group">
+                <label>
+                  Количество пены: {fluid.hydraFoamIntensity.toFixed(2)}
+                </label>
+
+                <Slider
+                  min={0}
+                  max={2}
+                  step={0.05}
+                  value={fluid.hydraFoamIntensity}
+                  tooltip={{ open: false }}
+                  onChange={(value) => fluid.setHydraFoamIntensity(value)}
+                />
+              </div>
+
+              <div className="control-group">
+                <label>
+                  Порог появления пены: {fluid.hydraFoamThreshold.toFixed(1)}
+                </label>
+
+                <Slider
+                  min={1}
+                  max={20}
+                  step={0.5}
+                  value={fluid.hydraFoamThreshold}
+                  tooltip={{ open: false }}
+                  onChange={(value) => fluid.setHydraFoamThreshold(value)}
+                />
+              </div>
+
+              <div className="control-group" style={{ marginBottom: "0" }}>
+                <label>
+                  Яркость бликов: {fluid.hydraHighlightIntensity.toFixed(2)}
+                </label>
+
+                <Slider
+                  min={0}
+                  max={1.5}
+                  step={0.05}
+                  value={fluid.hydraHighlightIntensity}
+                  tooltip={{ open: false }}
+                  onChange={(value) => fluid.setHydraHighlightIntensity(value)}
+                />
+              </div>
             </>
           )}
         </div>

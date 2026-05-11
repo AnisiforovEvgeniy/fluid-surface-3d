@@ -3,6 +3,10 @@ struct FragmentInput {
   @location(1) color: vec4f,
   @location(2) speed: f32,
   @location(3) lifetime: f32,
+
+  @location(4) foamIntensity: f32,
+  @location(5) foamThreshold: f32,
+  @location(6) highlightIntensity: f32,
 };
 
 @fragment
@@ -13,22 +17,57 @@ fn fs_main(input: FragmentInput) -> @location(0) vec4f {
     discard;
   }
 
-  // Мягкая круглая форма без резкого края.
   let softEdge = 1.0 - smoothstep(0.35, 1.0, dist);
 
-  // Центр плотнее, края прозрачнее.
   let density = 1.0 - smoothstep(0.0, 0.95, dist);
 
-  // Быстрые частицы выглядят чуть ярче — поток становится живее.
-  let speedGlow = clamp(input.speed * 0.015, 0.0, 0.35);
-
-  // Частица плавно затухает ближе к смерти.
   let lifeFade = clamp(input.lifetime / 2.0, 0.0, 1.0);
 
-  let waterTint = input.color.rgb + vec3f(0.04, 0.12, 0.16) * density;
-  let highlight = vec3f(0.12, 0.2, 0.22) * speedGlow * density;
+  let speedFoam = smoothstep(
+    input.foamThreshold,
+    input.foamThreshold + 7.0,
+    input.speed
+  );
 
-  let alpha = input.color.a * softEdge * lifeFade;
+  let foamMask =
+    speedFoam *
+    density *
+    input.foamIntensity;
 
-  return vec4f(waterTint + highlight, alpha);
+  let speedGlow =
+    clamp(input.speed * 0.015, 0.0, 1.0);
+
+  let highlightMask =
+    speedGlow *
+    density *
+    input.highlightIntensity;
+
+  let waterColor =
+    input.color.rgb +
+    vec3f(0.02, 0.10, 0.16) * density;
+
+  let foamColor = vec3f(0.92, 0.98, 1.0);
+
+  let highlightColor =
+    vec3f(0.35, 0.65, 0.75);
+
+  let colorWithFoam =
+    mix(
+      waterColor,
+      foamColor,
+      clamp(foamMask, 0.0, 1.0)
+    );
+
+  let finalColor =
+    colorWithFoam +
+    highlightColor * highlightMask;
+
+  let alphaBoost = foamMask * 0.35;
+
+  let alpha =
+    (input.color.a + alphaBoost) *
+    softEdge *
+    lifeFade;
+
+  return vec4f(finalColor, alpha);
 }

@@ -97,9 +97,9 @@ export class HydraFluidSystem extends FluidSystem {
     renderData.set(viewProjectionMatrix, 0);
 
     renderData[16] = particleRadius;
-    renderData[17] = 0.0;
-    renderData[18] = 0.0;
-    renderData[19] = 0.0;
+    renderData[17] = settings.foamIntensity ?? 0.7;
+    renderData[18] = settings.foamThreshold ?? 8.0;
+    renderData[19] = settings.highlightIntensity ?? 0.35;
 
     renderData[20] = baseColor[0];
     renderData[21] = baseColor[1];

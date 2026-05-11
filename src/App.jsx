@@ -187,6 +187,9 @@ function App() {
           {
             particleRadius: fluid.hydraParticleRadius,
             baseColor: [0.45, 0.9, 1.0, fluid.hydraAlpha],
+            foamIntensity: fluid.hydraFoamIntensity,
+            foamThreshold: fluid.hydraFoamThreshold,
+            highlightIntensity: fluid.hydraHighlightIntensity,
           }
         );
       }
@@ -206,6 +209,9 @@ function App() {
     fluid.hydraGravity,
     fluid.hydraAlpha,
     fluid.hydraParticleRadius,
+    fluid.hydraFoamIntensity,
+    fluid.hydraFoamThreshold,
+    fluid.hydraHighlightIntensity,
     settings.showAxes,
     updateUniformBuffer,
   ]);
