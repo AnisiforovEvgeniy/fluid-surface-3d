@@ -185,7 +185,7 @@ function App() {
           passEncoder,
           cameraRef.current.getViewProjectionNoModel(),
           {
-            particleSize: 1.0,
+            particleRadius: fluid.hydraParticleRadius,
             baseColor: [0.45, 0.9, 1.0, fluid.hydraAlpha],
           }
         );
@@ -205,6 +205,7 @@ function App() {
     fluid.hydraLifetime,
     fluid.hydraGravity,
     fluid.hydraAlpha,
+    fluid.hydraParticleRadius,
     settings.showAxes,
     updateUniformBuffer,
   ]);

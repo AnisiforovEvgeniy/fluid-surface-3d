@@ -8,6 +8,7 @@ export class FluidStore {
   hydraLifetime = 6.0;
   hydraGravity = 9.81;
   hydraAlpha = 0.55;
+  hydraParticleRadius = 0.018;
 
   constructor() {
     makeAutoObservable(this);
@@ -37,6 +38,10 @@ export class FluidStore {
     this.hydraAlpha = value;
   };
 
+  setHydraParticleRadius = (value) => {
+    this.hydraParticleRadius = value;
+  };
+
   reset = () => {
     this.fluidMode = false;
     this.fluidEngine = "simple";
@@ -45,6 +50,7 @@ export class FluidStore {
     this.hydraLifetime = 6.0;
     this.hydraGravity = 9.81;
     this.hydraAlpha = 0.55;
+    this.hydraParticleRadius = 0.018;
   };
 
   toJSON() {
@@ -55,6 +61,7 @@ export class FluidStore {
       hydraLifetime: this.hydraLifetime,
       hydraGravity: this.hydraGravity,
       hydraAlpha: this.hydraAlpha,
+      hydraParticleRadius: this.hydraParticleRadius,
     };
   }
 
@@ -65,5 +72,6 @@ export class FluidStore {
     if (json.hydraLifetime !== undefined) this.hydraLifetime = json.hydraLifetime;
     if (json.hydraGravity !== undefined) this.hydraGravity = json.hydraGravity;
     if (json.hydraAlpha !== undefined) this.hydraAlpha = json.hydraAlpha;
+    if (json.hydraParticleRadius !== undefined) this.hydraParticleRadius = json.hydraParticleRadius;
   }
 }

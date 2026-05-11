@@ -219,6 +219,21 @@ function ControlPanel() {
                   onChange={(value) => fluid.setHydraAlpha(value)}
                 />
               </div>
+
+              <div className="control-group" style={{ marginBottom: "0" }}>
+                <label>
+                  Размер частиц: {fluid.hydraParticleRadius.toFixed(3)}
+                </label>
+
+                <Slider
+                  min={0.005}
+                  max={0.06}
+                  step={0.001}
+                  value={fluid.hydraParticleRadius}
+                  tooltip={{ open: false }}
+                  onChange={(value) => fluid.setHydraParticleRadius(value)}
+                />
+              </div>
             </>
           )}
         </div>
