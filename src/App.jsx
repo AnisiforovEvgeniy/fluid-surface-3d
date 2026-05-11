@@ -5,6 +5,7 @@ import { Grid } from "./modules/Grid.js";
 import { OrbitCamera } from "./modules/OrbitCamera.js";
 import { FluidSystem } from "./modules/FluidSystem.js";
 import { HydraFluidSystem } from "./modules/HydraFluidSystem.js";
+import { HydraCompositePass } from "./modules/HydraCompositePass.js";
 import { Axes } from "./modules/Axes.js";
 import { useStore } from "./hook/useStore.js";
 import ControlPanel from "./components/ControlPanel/ControlPanel";
@@ -30,6 +31,7 @@ function App() {
   const animationFrameRef = useRef(null);
   const fluidRef = useRef(null);
   const hydraFluidRef = useRef(null);
+  const hydraCompositeRef = useRef(null);
   const axesRef = useRef(null);
   const axesBindGroupRef = useRef(null);
 
@@ -68,8 +70,15 @@ function App() {
     if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
       canvas.width = displayWidth;
       canvas.height = displayHeight;
+
       createDepthTexture(deviceRef.current, canvas);
-      createMultisampleTexture(deviceRef.current, presentationFormatRef.current, canvas);
+      createMultisampleTexture(
+        deviceRef.current,
+        presentationFormatRef.current,
+        canvas
+      );
+
+      hydraCompositeRef.current?.resize(displayWidth, displayHeight);
     }
   }, [createMultisampleTexture, createDepthTexture]);
 
@@ -102,6 +111,50 @@ function App() {
     updateUniformBuffer();
 
     const commandEncoder = device.createCommandEncoder();
+
+    // 1. Hydra сначала рендерится в отдельную offscreen texture
+    if (
+      fluid.fluidMode &&
+      fluid.fluidEngine === "hydra" &&
+      hydraFluidRef.current?.renderPipeline &&
+      hydraCompositeRef.current &&
+      cameraRef.current
+    ) {
+      hydraFluidRef.current.update(0.016, {
+        gridSize: settings.countCell,
+        cellSize: settings.sizeCell,
+        formSurface: formSurface.formSurface,
+        spawnPos: [0.0, 10.0, 0.0],
+        spawnRate: fluid.hydraSpawnRate,
+        maxLifetime: fluid.hydraLifetime,
+        gravity: fluid.hydraGravity,
+        restitution: 0.12,
+        friction: 0.975,
+        stickThreshold: 1.1,
+        collisionOffset: 0.04,
+      });
+
+      const hydraPass = commandEncoder.beginRenderPass(
+        hydraCompositeRef.current.getHydraRenderPassDescriptor()
+      );
+
+      hydraFluidRef.current.render(
+        hydraPass,
+        cameraRef.current.getViewProjectionNoModel(),
+        {
+          particleRadius: fluid.hydraParticleRadius,
+          baseColor: [0.45, 0.9, 1.0, fluid.hydraAlpha],
+          foamIntensity: fluid.hydraFoamIntensity,
+          foamThreshold: fluid.hydraFoamThreshold,
+          highlightIntensity: fluid.hydraHighlightIntensity,
+          stretch: fluid.hydraStretch,
+        }
+      );
+
+      hydraPass.end();
+    }
+
+    // 2. Основная сцена
     const textureView = context.getCurrentTexture().createView();
     const multisampleView = multisampleTextureRef.current.createView();
     const depthView = depthTextureRef.current.createView();
@@ -139,61 +192,43 @@ function App() {
       axesRef.current.render(passEncoder, axesBindGroupRef.current);
     }
 
-    if (fluid.fluidMode) {
-      const commonFluidSettings = {
+    // Simple остаётся старым прямым рендером в main pass
+    if (
+      fluid.fluidMode &&
+      fluid.fluidEngine === "simple" &&
+      fluidRef.current?.renderPipeline
+    ) {
+      fluidRef.current.update(0.016, {
         gridSize: settings.countCell,
         cellSize: settings.sizeCell,
         formSurface: formSurface.formSurface,
         spawnPos: [0.0, 10.0, 0.0],
         gravity: 9.81,
         maxLifetime: 1000000.0,
-      };
+        spawnRate: 1800,
+        restitution: 0.32,
+        friction: 0.985,
+        stickThreshold: 1.1,
+        collisionOffset: 0.03,
+      });
 
-      if (fluid.fluidEngine === "simple" && fluidRef.current?.renderPipeline) {
-        fluidRef.current.update(0.016, {
-          ...commonFluidSettings,
-          spawnRate: 1800,
-          restitution: 0.32,
-          friction: 0.985,
-          stickThreshold: 1.1,
-          collisionOffset: 0.03,
-        });
+      fluidRef.current.render(
+        passEncoder,
+        cameraRef.current.getViewProjectionNoModel(),
+        {
+          particleSize: 1.0,
+          baseColor: [0.2, 0.6, 1.0, 1.0],
+        }
+      );
+    }
 
-        fluidRef.current.render(
-          passEncoder,
-          cameraRef.current.getViewProjectionNoModel(),
-          {
-            particleSize: 1.0,
-            baseColor: [0.2, 0.6, 1.0, 1.0],
-          }
-        );
-      }
-
-      if (fluid.fluidEngine === "hydra" && hydraFluidRef.current?.renderPipeline) {
-        hydraFluidRef.current.update(0.016, {
-          ...commonFluidSettings,
-          spawnRate: fluid.hydraSpawnRate,
-          maxLifetime: fluid.hydraLifetime,
-          gravity: fluid.hydraGravity,
-          restitution: 0.12,
-          friction: 0.975,
-          stickThreshold: 1.1,
-          collisionOffset: 0.04,
-        });
-
-        hydraFluidRef.current.render(
-          passEncoder,
-          cameraRef.current.getViewProjectionNoModel(),
-          {
-            particleRadius: fluid.hydraParticleRadius,
-            baseColor: [0.45, 0.9, 1.0, fluid.hydraAlpha],
-            foamIntensity: fluid.hydraFoamIntensity,
-            foamThreshold: fluid.hydraFoamThreshold,
-            highlightIntensity: fluid.hydraHighlightIntensity,
-            stretch: fluid.hydraStretch,
-          }
-        );
-      }
+    // Hydra теперь только накладывается как сглаженный слой
+    if (
+      fluid.fluidMode &&
+      fluid.fluidEngine === "hydra" &&
+      hydraCompositeRef.current
+    ) {
+      hydraCompositeRef.current.render(passEncoder);
     }
 
     passEncoder.end();
@@ -302,7 +337,6 @@ function App() {
           presentationFormatRef.current,
           settings.countCell * settings.sizeCell * 1.5
         );
-
         await axesRef.current.init();
 
         axesBindGroupRef.current = device.createBindGroup({
@@ -361,7 +395,6 @@ function App() {
         createMultisampleTexture(device, presentationFormat, canvas);
         createDepthTexture(device, canvas);
 
-        // mat4 (64) + 2 float + padding = 80
         const uniformBufferSize = 80;
         uniformBufferRef.current = device.createBuffer({
           size: uniformBufferSize,
@@ -442,6 +475,9 @@ function App() {
         hydraFluidRef.current = new HydraFluidSystem(device, presentationFormat, 30000);
         await hydraFluidRef.current.init();
 
+        hydraCompositeRef.current = new HydraCompositePass(device, presentationFormat);
+        await hydraCompositeRef.current.init(canvas.width, canvas.height);
+
         isReadyRef.current = true;
         setIsInitialized(true);
       } catch (error) {
@@ -464,6 +500,7 @@ function App() {
       gridRef.current?.destroy();
       fluidRef.current?.destroy();
       hydraFluidRef.current?.destroy();
+      hydraCompositeRef.current?.destroy();
       axesRef.current?.destroy();
       multisampleTextureRef.current?.destroy();
       depthTextureRef.current?.destroy();
@@ -475,7 +512,7 @@ function App() {
     <div className="canvas-container">
       <canvas id="canvas" ref={canvasRef}></canvas>
       <ControlPanel />
-      {!!settings.colorMode && <TensionLegend/>}
+      {!!settings.colorMode && <TensionLegend />}
     </div>
   );
 }
