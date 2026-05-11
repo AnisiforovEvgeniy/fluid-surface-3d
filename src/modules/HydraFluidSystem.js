@@ -75,6 +75,29 @@ export class HydraFluidSystem extends FluidSystem {
     });
   }
 
+  createBuffers() {
+    const particleSize = 32;
+
+    this.particleBuffer = this.device.createBuffer({
+      size: this.maxParticles * particleSize,
+      usage: GPUBufferUsage.STORAGE | GPUBufferUsage.COPY_DST | GPUBufferUsage.VERTEX,
+    });
+
+    const initialData = new Float32Array(this.maxParticles * 8);
+    this.device.queue.writeBuffer(this.particleBuffer, 0, initialData);
+
+    this.computeUniformBuffer = this.device.createBuffer({
+      size: 64,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+
+    // mat4 64 + params vec4 16 + color vec4 16 + extra vec4 16 = 112 bytes
+    this.renderUniformBuffer = this.device.createBuffer({
+      size: 112,
+      usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST,
+    });
+  }
+
   update(deltaTime, settings = {}) {
     super.update(deltaTime, {
       ...settings,
@@ -92,7 +115,7 @@ export class HydraFluidSystem extends FluidSystem {
     const particleRadius = settings.particleRadius ?? 0.018;
     const baseColor = settings.baseColor ?? [0.35, 0.85, 1.0, 0.55];
 
-    const renderData = new Float32Array(24);
+    const renderData = new Float32Array(28);
 
     renderData.set(viewProjectionMatrix, 0);
 
@@ -100,6 +123,13 @@ export class HydraFluidSystem extends FluidSystem {
     renderData[17] = settings.foamIntensity ?? 0.7;
     renderData[18] = settings.foamThreshold ?? 8.0;
     renderData[19] = settings.highlightIntensity ?? 0.35;
+
+    renderData[20] = baseColor[0];
+    renderData[21] = baseColor[1];
+    renderData[22] = baseColor[2];
+    renderData[23] = baseColor[3];
+
+    renderData[24] = settings.stretch ?? 2.5;
 
     renderData[20] = baseColor[0];
     renderData[21] = baseColor[1];

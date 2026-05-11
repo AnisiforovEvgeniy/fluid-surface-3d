@@ -190,6 +190,7 @@ function App() {
             foamIntensity: fluid.hydraFoamIntensity,
             foamThreshold: fluid.hydraFoamThreshold,
             highlightIntensity: fluid.hydraHighlightIntensity,
+            stretch: fluid.hydraStretch,
           }
         );
       }
@@ -212,6 +213,7 @@ function App() {
     fluid.hydraFoamIntensity,
     fluid.hydraFoamThreshold,
     fluid.hydraHighlightIntensity,
+    fluid.hydraStretch,
     settings.showAxes,
     updateUniformBuffer,
   ]);

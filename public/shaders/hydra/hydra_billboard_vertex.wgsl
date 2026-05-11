@@ -5,11 +5,18 @@ struct Particle {
 
 struct RenderUniforms {
   viewProjectionMatrix: mat4x4f,
+
   particleRadius: f32,
   foamIntensity: f32,
   foamThreshold: f32,
   highlightIntensity: f32,
+
   baseColor: vec4f,
+
+  stretch: f32,
+  pad0: f32,
+  pad1: f32,
+  pad2: f32,
 };
 
 @group(0) @binding(0)
@@ -56,7 +63,6 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 
     out.localUv = vec2f(0.0);
     out.color = vec4f(0.0);
-
     out.speed = 0.0;
     out.lifetime = 0.0;
 
@@ -70,18 +76,38 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
   let worldPos = vec4f(particle.pos.xyz, 1.0);
   var clipPos = uniforms.viewProjectionMatrix * worldPos;
 
+  let speed = length(particle.vel.xyz);
   let corner = corners[cornerIndex];
 
-  let speed = length(particle.vel.xyz);
+  var dir = vec2f(0.0, 1.0);
 
-  let speedBoost = clamp(speed * 0.025, 0.0, 0.8);
-  let radius = uniforms.particleRadius * (1.0 + speedBoost);
+  if (speed > 0.001) {
+    let nextWorld = vec4f(particle.pos.xyz + normalize(particle.vel.xyz) * 0.15, 1.0);
+    let nextClip = uniforms.viewProjectionMatrix * nextWorld;
 
-  let offset = corner * radius * clipPos.w;
+    let currentNdc = clipPos.xy / clipPos.w;
+    let nextNdc = nextClip.xy / nextClip.w;
+
+    let screenDir = nextNdc - currentNdc;
+
+    if (length(screenDir) > 0.00001) {
+      dir = normalize(screenDir);
+    }
+  }
+
+  let side = vec2f(-dir.y, dir.x);
+
+  let speedBoost = clamp(speed * 0.02, 0.0, 1.0);
+  let longRadius = uniforms.particleRadius * uniforms.stretch * (1.0 + speedBoost);
+  let sideRadius = uniforms.particleRadius;
+
+  let offsetNdc =
+    side * corner.x * sideRadius +
+    dir * corner.y * longRadius;
 
   clipPos = vec4f(
-    clipPos.x + offset.x,
-    clipPos.y + offset.y,
+    clipPos.x + offsetNdc.x * clipPos.w,
+    clipPos.y + offsetNdc.y * clipPos.w,
     clipPos.z,
     clipPos.w
   );
@@ -90,7 +116,6 @@ fn vs_main(@builtin(vertex_index) vertexIndex: u32) -> VertexOutput {
 
   out.localUv = corner;
   out.color = uniforms.baseColor;
-
   out.speed = speed;
   out.lifetime = lifetime;
 

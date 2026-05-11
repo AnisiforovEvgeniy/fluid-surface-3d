@@ -12,6 +12,7 @@ export class FluidStore {
   hydraFoamIntensity = 0.7;
   hydraFoamThreshold = 8.0;
   hydraHighlightIntensity = 0.35;
+  hydraStretch = 2.5;
 
   constructor() {
     makeAutoObservable(this);
@@ -57,6 +58,10 @@ export class FluidStore {
     this.hydraHighlightIntensity = value;
   };
 
+  setHydraStretch = (value) => {
+    this.hydraStretch = value;
+  };
+
   reset = () => {
     this.fluidMode = false;
     this.fluidEngine = "simple";
@@ -69,6 +74,7 @@ export class FluidStore {
     this.hydraFoamIntensity = 0.7;
     this.hydraFoamThreshold = 8.0;
     this.hydraHighlightIntensity = 0.35;
+    this.hydraStretch = 2.5;
   };
 
   toJSON() {
@@ -97,5 +103,6 @@ export class FluidStore {
     if (json.hydraFoamIntensity !== undefined) this.hydraFoamIntensity = json.hydraFoamIntensity;
     if (json.hydraFoamThreshold !== undefined) this.hydraFoamThreshold = json.hydraFoamThreshold;
     if (json.hydraHighlightIntensity !== undefined) this.hydraHighlightIntensity = json.hydraHighlightIntensity;
+    if (json.hydraStretch !== undefined) this.hydraStretch = json.hydraStretch;
   }
 }

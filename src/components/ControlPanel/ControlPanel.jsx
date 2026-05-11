@@ -279,6 +279,21 @@ function ControlPanel() {
                   onChange={(value) => fluid.setHydraHighlightIntensity(value)}
                 />
               </div>
+
+              <div className="control-group">
+                <label>
+                  Растяжение по потоку: {fluid.hydraStretch.toFixed(2)}
+                </label>
+
+                <Slider
+                  min={1}
+                  max={8}
+                  step={0.1}
+                  value={fluid.hydraStretch}
+                  tooltip={{ open: false }}
+                  onChange={(value) => fluid.setHydraStretch(value)}
+                />
+              </div>
             </>
           )}
         </div>
