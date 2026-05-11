@@ -47,6 +47,11 @@ export class OrbitCamera {
     });
 
     window.addEventListener('wheel', (e) => {
+
+      if (e.target.closest('.control-panel')) {
+        return;
+      }
+
       e.preventDefault();
       const newRadius = this.radius * (e.deltaY > 0 ? 1.1 : 0.9);
       this.radius = Math.max(1.0, Math.min(40.0, newRadius));

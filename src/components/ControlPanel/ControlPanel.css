@@ -13,6 +13,37 @@
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
   backdrop-filter: blur(10px);
   z-index: 100;
+
+  max-height: 750px;
+  overflow-y: scroll;
+}
+
+.control-panel::-webkit-scrollbar {
+  width: 6px; /* Делаем тоньше, чем по умолчанию */
+}
+
+/* Трек (фон), по которому ползет ползунок */
+.control-panel::-webkit-scrollbar-track {
+  background: transparent; /* Прозрачный, чтобы было видно фон панели */
+}
+
+/* Ползунок (thumb) */
+.control-panel::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.15); /* Светло-серый, полупрозрачный */
+  border-radius: 20px; /* Закругленные края */
+  border: 3px solid transparent; /* Создаем "отступ" внутри трека (визуально) */
+  background-clip: content-box; /* Важно для работы border выше */
+}
+
+/* Ползунок при наведении (hover) */
+.control-panel::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.4); /* Делаем ярче при наведении */
+}
+
+/* --- Скроллбар для Firefox --- */
+.control-panel {
+  scrollbar-width: thin; /* Тонкий скроллбар */
+  scrollbar-color: rgba(255, 255, 255, 0.15) transparent; /* Цвет ползунка и трека */
 }
 
 .control-panel h3 {
