@@ -8,6 +8,7 @@ export class Mesh {
     this.vertexBuffer = null;
     this.indexBuffer = null;
     this.indexCount = 0;
+    this.depthPipeline = null;
   }
 
   async init() {
@@ -63,6 +64,46 @@ export class Mesh {
         format: 'depth24plus',
       },
     });
+
+    this.depthPipeline = this.device.createRenderPipeline({
+      layout: "auto",
+
+      vertex: {
+        module: this.shaderModule,
+        entryPoint: "mesh_vertex",
+        buffers: [
+          {
+            arrayStride: 20,
+            attributes: [
+              {
+                shaderLocation: 0,
+                offset: 0,
+                format: "float32x3",
+              },
+              {
+                shaderLocation: 1,
+                offset: 12,
+                format: "float32x2",
+              },
+            ],
+          },
+        ],
+      },
+
+      primitive: {
+        topology: "triangle-list",
+      },
+
+      multisample: {
+        count: 4,
+      },
+
+      depthStencil: {
+        depthWriteEnabled: true,
+        depthCompare: "less",
+        format: "depth24plus",
+      },
+    });
   }
 
   createSurface() {
@@ -116,6 +157,20 @@ export class Mesh {
     this.indexBuffer.unmap();
 
     this.indexCount = indices.length;
+  }
+
+  renderDepth(passEncoder, bindGroup) {
+    if (!this.depthPipeline) return;
+
+    passEncoder.setPipeline(this.depthPipeline);
+
+    if (bindGroup) {
+      passEncoder.setBindGroup(0, bindGroup);
+    }
+
+    passEncoder.setVertexBuffer(0, this.vertexBuffer);
+    passEncoder.setIndexBuffer(this.indexBuffer, "uint16");
+    passEncoder.drawIndexed(this.indexCount);
   }
 
   render(passEncoder, bindGroup) {

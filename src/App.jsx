@@ -26,6 +26,7 @@ function App() {
   const depthTextureRef = useRef(null);
   const uniformBufferRef = useRef(null);
   const meshBindGroupRef = useRef(null);
+  const meshDepthBindGroupRef = useRef(null);
   const gridBindGroupRef = useRef(null);
   const cameraRef = useRef(null);
   const animationFrameRef = useRef(null);
@@ -133,6 +134,17 @@ function App() {
         stickThreshold: 1.1,
         collisionOffset: 0.04,
       });
+
+      const hydraDepthPrepass = commandEncoder.beginRenderPass(
+        hydraCompositeRef.current.getHydraDepthPrepassDescriptor()
+      );
+
+      meshRef.current.renderDepth(
+        hydraDepthPrepass,
+        meshDepthBindGroupRef.current
+      );
+
+      hydraDepthPrepass.end();
 
       const hydraPass = commandEncoder.beginRenderPass(
         hydraCompositeRef.current.getHydraRenderPassDescriptor()
@@ -279,6 +291,7 @@ function App() {
 
       try {
         meshBindGroupRef.current = null;
+        meshDepthBindGroupRef.current = null;
         gridBindGroupRef.current = null;
         axesBindGroupRef.current = null;
 
@@ -302,6 +315,16 @@ function App() {
 
         meshBindGroupRef.current = device.createBindGroup({
           layout: meshRef.current.pipeline.getBindGroupLayout(0),
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
+        });
+
+        meshDepthBindGroupRef.current = device.createBindGroup({
+          layout: meshRef.current.depthPipeline.getBindGroupLayout(0),
           entries: [
             {
               binding: 0,
@@ -415,6 +438,16 @@ function App() {
 
         meshBindGroupRef.current = device.createBindGroup({
           layout: meshRef.current.pipeline.getBindGroupLayout(0),
+          entries: [
+            {
+              binding: 0,
+              resource: { buffer: uniformBufferRef.current },
+            },
+          ],
+        });
+
+        meshDepthBindGroupRef.current = device.createBindGroup({
+          layout: meshRef.current.depthPipeline.getBindGroupLayout(0),
           entries: [
             {
               binding: 0,

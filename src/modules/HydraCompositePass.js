@@ -160,9 +160,20 @@ export class HydraCompositePass {
       ],
       depthStencilAttachment: {
         view: this.depthTexture.createView(),
+        depthLoadOp: "load",
+        depthStoreOp: "discard",
+      },
+    };
+  }
+
+  getHydraDepthPrepassDescriptor() {
+    return {
+      colorAttachments: [],
+      depthStencilAttachment: {
+        view: this.depthTexture.createView(),
         depthClearValue: 1.0,
         depthLoadOp: "clear",
-        depthStoreOp: "discard",
+        depthStoreOp: "store",
       },
     };
   }
