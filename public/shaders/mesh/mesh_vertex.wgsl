@@ -21,6 +21,7 @@ fn mesh_vertex(
     let x = position.x;
     let y = position.y;
     var z_offset : f32 = 0.0;
+    let mode = i32(uniforms.deformationType);
     
     // === ВАШИ РЕЖИМЫ ФОРМЫ (без изменений) ===
     if (uniforms.deformationType == 1) {
@@ -47,11 +48,10 @@ fn mesh_vertex(
     
     pos.z += z_offset;
     
-    // === ЦВЕТ: серый ИЛИ по натяжению ===
     var color : vec3f = vec3f(0.75, 0.75, 0.75);
 
 if (uniforms.colorMode > 0.5) {
-    let tension = computeTension(x, uniforms.deformationType);
+    let tension = computeTension(x, mode);
     let t = clamp(tension / 2.0, 0.0, 1.0);
 
     if (t < 0.25) {
@@ -63,7 +63,6 @@ if (uniforms.colorMode > 0.5) {
         );
     } 
     else if (t < 0.5) {
-        // голубой → жёлтый
         color = mix(
             vec3f(0.0, 0.85, 1.0),
             vec3f(1.0, 1.0, 0.0),
@@ -71,7 +70,6 @@ if (uniforms.colorMode > 0.5) {
         );
     } 
     else if (t < 0.75) {
-        // жёлтый → оранжевый
         color = mix(
             vec3f(1.0, 1.0, 0.0),
             vec3f(1.0, 0.5, 0.0),
@@ -79,7 +77,6 @@ if (uniforms.colorMode > 0.5) {
         );
     } 
     else {
-        // оранжевый → красный
         color = mix(
             vec3f(1.0, 0.5, 0.0),
             vec3f(1.0, 0.0, 0.0),
@@ -95,16 +92,15 @@ if (uniforms.colorMode > 0.5) {
 }
 
 // === Аналитические производные для каждого режима ===
-fn computeTension(x : f32, mode : f32) -> f32 {
-    if (mode == 1) { return abs(1.0); }                           // d/dx(x) = 1
-    else if (mode == 2) { return abs(2.0 * x); }                  // d/dx(x²) = 2x
-    else if (mode == 3) { return abs(3.0 * x * x); }              // d/dx(x³) = 3x²
-    else if (mode == 4) { return 1.0; }                           // d/dx(|x|) = ±1 → модуль = 1
-    else if (mode == 5) { return abs(0.5 / sqrt(max(x, 0.001))); } // d/dx(√x) = 1/(2√x)
-    else if (mode == 6) { 
-        let denom = abs(x) + 0.1;
-        return abs(1.0 / (denom * denom));                        // d/dx(1/(|x|+0.1))
+fn computeTension(x : f32, mode : i32) -> f32 {
+    switch mode {
+        case 1: { return abs(1.0); }                              // d/dx(x) = 1
+        case 2: { return abs(2.0 * x); }                          // d/dx(x²) = 2x
+        case 3: { return abs(3.0 * x * x); }                      // d/dx(x³) = 3x²
+        case 4: { return 1.0; }                                   // d/dx(|x|) = ±1 → модуль = 1
+        case 5: { return abs(0.5 / sqrt(max(x, 0.001))); }        // d/dx(√x) = 1/(2√x)
+        case 6: {return abs(1.0 / x); }                           // d/dx(1/x) = -1/(x²)
+        case 7: { return abs(cos(x)); }                           // d/dx(sin(x)) = cos(x)
+        default: { return 0.0; }                                  
     }
-    else if (mode == 7) { return abs(cos(x)); }                   // d/dx(sin(x)) = cos(x)
-    return 0.0;
 }

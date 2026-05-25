@@ -13,7 +13,7 @@ export class OrbitCamera {
     this.viewMatrix = mat4.create();
     this.projectionMatrix = mat4.create();
     this.viewProjectionMatrix = mat4.create();
-    this.viewProjectionMatrixNoModel = mat4.create(); // ← НОВОЕ (для частиц)
+    this.viewProjectionMatrixNoModel = mat4.create();
     this.modelMatrix = mat4.create(); 
     
     mat4.rotateX(this.modelMatrix, this.modelMatrix, -Math.PI / 2);

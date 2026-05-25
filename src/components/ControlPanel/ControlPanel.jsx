@@ -142,7 +142,7 @@ function ControlPanel() {
             </div>
           </div>
 
-          <div className="control-group">
+          {/* <div className="control-group">
             <label style={{ color: "#ffffff" }}>Режим жидкости</label>
 
             <Radio.Group
@@ -155,11 +155,11 @@ function ControlPanel() {
               value={fluid.fluidEngine}
               onChange={(e) => fluid.setFluidEngine(e.target.value)}
               options={[
-                { value: "simple", label: "Simple — текущая система" },
+                // { value: "simple", label: "Simple — текущая система" },
                 { value: "hydra", label: "Hydra — новая вода" },
               ]}
             />
-          </div>
+          </div> */}
 
           {fluid.fluidEngine === "hydra" && (
             <>
